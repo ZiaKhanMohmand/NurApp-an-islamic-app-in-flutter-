@@ -1,14 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nur_app/features/quran/quran_screen.dart';
+import 'package:nur_app/features/quran/surah_screen.dart';
+import 'package:nur_app/features/reflection/reflection_screen.dart';
+import 'package:nur_app/features/tasbeeh/tasbeeh_screen.dart';
 import 'features/splash/splash_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/home/home_screen.dart';
+import 'features/qibla/qibla_screen.dart';
 
 final router = GoRouter(
   initialLocation: '/splash',
   routes: [
     GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
     GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
+    GoRoute(path: '/qibla', builder: (_, __) => const QiblaScreen()),
+    GoRoute(path: '/tasbeeh', builder: (_, __) => const TasbeehScreen()),
+    GoRoute(path: '/quran', builder: (_, __) => const QuranScreen()),
+    GoRoute(
+      path: '/surah/:number',
+      builder: (_, state) =>
+          SurahScreen(number: int.parse(state.pathParameters['number']!)),
+    ),
+    GoRoute(path: '/reflection', builder: (_, __) => const ReflectionScreen()),
     ShellRoute(
       builder: (context, state, child) => MainShell(child: child),
       routes: [
