@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nur_app/core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import 'home_provider.dart';
 import 'package:go_router/go_router.dart';
@@ -11,38 +12,39 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(homeProvider);
+    final s = ref.watch(stringsProvider);
     final times = state.prayerTimes;
 
     final prayers = [
       {
-        'name': 'Fajr',
+        'name': s.fajr,
         'time': times?.fajr ?? '--:--',
         'icon': Icons.wb_twilight_rounded,
-        'active': state.currentPrayer.contains('Fajr'),
+        'active': state.currentPrayer == 'Fajr',
       },
       {
-        'name': 'Dhuhr',
+        'name': s.dhuhr,
         'time': times?.dhuhr ?? '--:--',
         'icon': Icons.wb_sunny_rounded,
-        'active': state.currentPrayer.contains('Dhuhr'),
+        'active': state.currentPrayer == 'Dhuhr',
       },
       {
-        'name': 'Asr',
+        'name': s.asr,
         'time': times?.asr ?? '--:--',
         'icon': Icons.sunny_snowing,
-        'active': state.currentPrayer.contains('Asr'),
+        'active': state.currentPrayer == 'Asr',
       },
       {
-        'name': 'Maghrib',
+        'name': s.maghrib,
         'time': times?.maghrib ?? '--:--',
         'icon': Icons.nights_stay_rounded,
-        'active': state.currentPrayer.contains('Maghrib'),
+        'active': state.currentPrayer == 'Maghrib',
       },
       {
-        'name': 'Isha',
+        'name': s.isha,
         'time': times?.isha ?? '--:--',
         'icon': Icons.dark_mode_rounded,
-        'active': state.currentPrayer.contains('Isha'),
+        'active': state.currentPrayer == 'Isha',
       },
     ];
 
@@ -55,21 +57,21 @@ class HomeScreen extends ConsumerWidget {
           : SafeArea(
               child: CustomScrollView(
                 slivers: [
-                  SliverToBoxAdapter(child: _buildAppBar(context, state)),
+                  SliverToBoxAdapter(child: _buildAppBar(context, state, s)),
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
                         const SizedBox(height: 12),
-                        _buildHeroCard(state),
+                        _buildHeroCard(state, s),
                         const SizedBox(height: 20),
-                        _buildPrayerTimesRow(prayers),
+                        _buildPrayerTimesRow(prayers, s),
                         const SizedBox(height: 16),
-                        _buildQiblaRamadanRow(context),
+                        _buildQiblaRamadanRow(context, s),
                         const SizedBox(height: 16),
-                        _buildVerseCard(context),
+                        _buildVerseCard(context, s),
                         const SizedBox(height: 16),
-                        _buildMosqueCard(),
+                        _buildMosqueCard(s),
                         const SizedBox(height: 16),
                       ]),
                     ),
@@ -80,7 +82,7 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAppBar(BuildContext context, HomeState state) {
+  Widget _buildAppBar(BuildContext context, HomeState state, AppStrings s) {
     final now = DateTime.now();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -89,8 +91,8 @@ class HomeScreen extends ConsumerWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Islamic Date',
+              Text(
+                s.today,
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -117,7 +119,13 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
           ),
-          const Icon(Icons.calendar_month_rounded, color: AppColors.primary),
+          GestureDetector(
+            onTap: () => context.go('/calendar'),
+            child: const Icon(
+              Icons.calendar_month_rounded,
+              color: AppColors.primary,
+            ),
+          ),
         ],
       ),
     );
@@ -138,7 +146,7 @@ class HomeScreen extends ConsumerWidget {
     'Dec',
   ][m - 1];
 
-  Widget _buildHeroCard(HomeState state) {
+  Widget _buildHeroCard(HomeState state, AppStrings s) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -173,7 +181,7 @@ class HomeScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                state.currentPrayer,
+                translatePrayer(state.currentPrayer, s),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 22,
@@ -182,7 +190,7 @@ class HomeScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                state.countdown,
+                s.toLocalNum(state.countdown),
                 style: const TextStyle(
                   color: AppColors.gold,
                   fontSize: 48,
@@ -192,7 +200,7 @@ class HomeScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Next: ${state.nextPrayer} at ${state.nextPrayerTime}',
+                '${s.next}: ${translatePrayerName(state.nextPrayer, s)} ${s.isArabic ? "في" : "at"} ${s.toLocalNum(state.nextPrayerTime)}',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.7),
                   fontSize: 14,
@@ -205,14 +213,17 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPrayerTimesRow(List<Map<String, dynamic>> prayers) {
+  Widget _buildPrayerTimesRow(
+    List<Map<String, dynamic>> prayers,
+    AppStrings s,
+  ) {
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Prayer Times',
+            Text(
+              s.prayerTimes,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -220,7 +231,7 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
             Text(
-              'Today',
+              s.today,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -243,7 +254,7 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildQiblaRamadanRow(BuildContext context) {
+  Widget _buildQiblaRamadanRow(BuildContext context, AppStrings s) {
     return Row(
       children: [
         Expanded(
@@ -259,8 +270,8 @@ class HomeScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'QIBLA',
+                  Text(
+                    s.qibla,
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -277,9 +288,9 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Center(
+                  Center(
                     child: Text(
-                      'Tap to open',
+                      s.tapToOpen,
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.onSurfaceVariant,
@@ -293,44 +304,47 @@ class HomeScreen extends ConsumerWidget {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.primaryContainer,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'RAMADAN DAY',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.gold,
-                    letterSpacing: 1,
+          child: GestureDetector(
+            onTap: () => context.go('/ramadan'),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.primaryContainer,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    s.ramadanDay,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.gold,
+                      letterSpacing: 1,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Coming Soon',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                  const SizedBox(height: 8),
+                  Text(
+                    s.comingSoon,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: 0.5,
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    valueColor: const AlwaysStoppedAnimation(AppColors.gold),
-                    minHeight: 4,
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: 0.5,
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      valueColor: const AlwaysStoppedAnimation(AppColors.gold),
+                      minHeight: 4,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -338,7 +352,7 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildVerseCard(BuildContext context) {
+  Widget _buildVerseCard(BuildContext context, AppStrings s) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -349,12 +363,12 @@ class HomeScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Text('✦', style: TextStyle(color: AppColors.gold, fontSize: 16)),
               SizedBox(width: 10),
               Text(
-                'Verse of the Day',
+                s.verseOfDay,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -402,8 +416,8 @@ class HomeScreen extends ConsumerWidget {
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
-              child: const Text(
-                'READ REFLECTION',
+              child: Text(
+                s.readReflection,
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -418,7 +432,7 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMosqueCard() {
+  Widget _buildMosqueCard(AppStrings s) {
     return Container(
       height: 160,
       decoration: BoxDecoration(
@@ -442,13 +456,13 @@ class HomeScreen extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: Colors.white.withOpacity(0.3)),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.navigation_rounded, color: Colors.white, size: 14),
                   SizedBox(width: 6),
                   Text(
-                    'Nearby Mosques',
+                    s.nearbyMosques,
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 13,
@@ -463,6 +477,25 @@ class HomeScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+String translatePrayer(String prayer, AppStrings s) {
+  if (prayer == 'Fajr') return s.isArabic ? 'صلاة ${s.fajr}' : 'Fajr Prayer';
+  if (prayer == 'Dhuhr') return s.isArabic ? 'صلاة ${s.dhuhr}' : 'Dhuhr Prayer';
+  if (prayer == 'Asr') return s.isArabic ? 'صلاة ${s.asr}' : 'Asr Prayer';
+  if (prayer == 'Maghrib')
+    return s.isArabic ? 'صلاة ${s.maghrib}' : 'Maghrib Prayer';
+  if (prayer == 'Isha') return s.isArabic ? 'صلاة ${s.isha}' : 'Isha Prayer';
+  return prayer;
+}
+
+String translatePrayerName(String name, AppStrings s) {
+  if (name == 'Fajr') return s.fajr;
+  if (name == 'Dhuhr') return s.dhuhr;
+  if (name == 'Asr') return s.asr;
+  if (name == 'Maghrib') return s.maghrib;
+  if (name == 'Isha') return s.isha;
+  return name;
 }
 
 class _PrayerCard extends StatelessWidget {

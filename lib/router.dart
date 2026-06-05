@@ -1,51 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:nur_app/features/quran/quran_screen.dart';
-import 'package:nur_app/features/quran/surah_screen.dart';
-import 'package:nur_app/features/reflection/reflection_screen.dart';
-import 'package:nur_app/features/tasbeeh/tasbeeh_screen.dart';
+import 'package:nur_app/features/settings/settings_screen.dart';
 import 'features/splash/splash_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/qibla/qibla_screen.dart';
+import 'features/tasbeeh/tasbeeh_screen.dart';
+import 'features/quran/quran_screen.dart';
+import 'features/quran/surah_screen.dart';
+import 'features/calendar/calendar_screen.dart';
+import 'features/ramadan/ramadan_screen.dart';
+import 'features/reflection/reflection_screen.dart';
 
 final router = GoRouter(
-  initialLocation: '/splash',
+  initialLocation: '/home',
   routes: [
     GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
     GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
-    GoRoute(path: '/qibla', builder: (_, __) => const QiblaScreen()),
-    GoRoute(path: '/tasbeeh', builder: (_, __) => const TasbeehScreen()),
-    GoRoute(path: '/quran', builder: (_, __) => const QuranScreen()),
+    GoRoute(path: '/calendar', builder: (_, __) => const CalendarScreen()),
+    GoRoute(path: '/ramadan', builder: (_, __) => const RamadanScreen()),
+    GoRoute(path: '/reflection', builder: (_, __) => const ReflectionScreen()),
     GoRoute(
       path: '/surah/:number',
       builder: (_, state) =>
           SurahScreen(number: int.parse(state.pathParameters['number']!)),
     ),
-    GoRoute(path: '/reflection', builder: (_, __) => const ReflectionScreen()),
+
     ShellRoute(
       builder: (context, state, child) => MainShell(child: child),
       routes: [
         GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
-        GoRoute(
-          path: '/quran',
-          builder: (_, __) =>
-              const Scaffold(body: Center(child: Text('Quran'))),
-        ),
-        GoRoute(
-          path: '/tasbeeh',
-          builder: (_, __) =>
-              const Scaffold(body: Center(child: Text('Tasbeeh'))),
-        ),
-        GoRoute(
-          path: '/qibla',
-          builder: (_, __) =>
-              const Scaffold(body: Center(child: Text('Qibla'))),
-        ),
-        GoRoute(
-          path: '/more',
-          builder: (_, __) => const Scaffold(body: Center(child: Text('More'))),
-        ),
+        GoRoute(path: '/quran', builder: (_, __) => const QuranScreen()),
+        GoRoute(path: '/tasbeeh', builder: (_, __) => const TasbeehScreen()),
+        GoRoute(path: '/qibla', builder: (_, __) => const QiblaScreen()),
+        GoRoute(path: '/more', builder: (_, __) => const SettingsScreen()),
       ],
     ),
   ],
