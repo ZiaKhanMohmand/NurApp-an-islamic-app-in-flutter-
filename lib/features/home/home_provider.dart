@@ -64,7 +64,7 @@ class HomeNotifier extends Notifier<HomeState> {
       state = state.copyWith(
         prayerTimes: times,
         city: city,
-        currentPrayer: '${current['current']} Prayer',
+        currentPrayer: current['current']!,
         nextPrayer: current['next']!,
         nextPrayerTime: current['nextTime']!,
         countdown: PrayerService.getCountdown(current['nextTime']!),

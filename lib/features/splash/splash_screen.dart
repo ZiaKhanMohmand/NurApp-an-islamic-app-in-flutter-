@@ -165,7 +165,9 @@ class _CrescentPainter extends CustomPainter {
       Offset(cx - r * 0.3, cy - r * 0.3),
     ];
     p2.moveTo(pts[0].dx, pts[0].dy);
-    for (final pt in pts.skip(1)) p2.lineTo(pt.dx, pt.dy);
+    for (final pt in pts.skip(1)) {
+      p2.lineTo(pt.dx, pt.dy);
+    }
     p2.close();
     canvas.drawPath(p2, paint);
   }

@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import 'reflection_service.dart';
+import 'package:nur_app/core/l10n/app_strings.dart';
 
-class ReflectionScreen extends StatefulWidget {
+class ReflectionScreen extends ConsumerStatefulWidget {
   const ReflectionScreen({super.key});
   @override
-  State<ReflectionScreen> createState() => _ReflectionScreenState();
+  ConsumerState<ReflectionScreen> createState() => _ReflectionScreenState();
 }
 
-class _ReflectionScreenState extends State<ReflectionScreen> {
+class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
   ReflectionData? _reflection;
   bool _loading = true;
   bool _saved = false;
@@ -22,17 +25,22 @@ class _ReflectionScreenState extends State<ReflectionScreen> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final r = await ReflectionService.fetchReflection();
+      final r = await ReflectionService.fetchReflection(
+        isArabic: ref.read(stringsProvider).isArabic,
+      );
+      if (!mounted) return;
       setState(() {
         _reflection = r;
         _loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _loading = false;
@@ -41,18 +49,23 @@ class _ReflectionScreenState extends State<ReflectionScreen> {
   }
 
   Future<void> _refresh() async {
+    if (!mounted) return;
     setState(() {
       _loading = true;
       _error = null;
       _saved = false;
     });
     try {
-      final r = await ReflectionService.refreshReflection();
+      final r = await ReflectionService.refreshReflection(
+        isArabic: ref.read(stringsProvider).isArabic,
+      );
+      if (!mounted) return;
       setState(() {
         _reflection = r;
         _loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _loading = false;
@@ -88,6 +101,7 @@ class _ReflectionScreenState extends State<ReflectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(stringsProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -98,7 +112,13 @@ class _ReflectionScreenState extends State<ReflectionScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  const Icon(Icons.menu_rounded, color: AppColors.primary),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.arrow_back_rounded,
+                      color: AppColors.primary,
+                    ),
+                    onPressed: () => context.go('/home'),
+                  ),
                   const Expanded(
                     child: Text(
                       'NurApp',
@@ -109,10 +129,6 @@ class _ReflectionScreenState extends State<ReflectionScreen> {
                         color: AppColors.primary,
                       ),
                     ),
-                  ),
-                  const Icon(
-                    Icons.calendar_month_rounded,
-                    color: AppColors.primary,
                   ),
                 ],
               ),
@@ -125,11 +141,11 @@ class _ReflectionScreenState extends State<ReflectionScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Header
-                    const Center(
+                    Center(
                       child: Column(
                         children: [
                           Text(
-                            'DAILY GUIDANCE',
+                            s.dailyGuidance,
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
@@ -139,7 +155,7 @@ class _ReflectionScreenState extends State<ReflectionScreen> {
                           ),
                           SizedBox(height: 6),
                           Text(
-                            'Sacred Reflection',
+                            s.sacredReflection,
                             style: TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.w700,
@@ -286,19 +302,19 @@ class _ReflectionScreenState extends State<ReflectionScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Row(
+                            Row(
                               children: [
-                                Text(
+                                const Text(
                                   '✦',
                                   style: TextStyle(
                                     color: AppColors.gold,
                                     fontSize: 14,
                                   ),
                                 ),
-                                SizedBox(width: 8),
+                                const SizedBox(width: 8),
                                 Text(
-                                  'AI INSIGHT',
-                                  style: TextStyle(
+                                  s.aiInsight,
+                                  style: const TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
                                     color: AppColors.gold,
@@ -332,9 +348,9 @@ class _ReflectionScreenState extends State<ReflectionScreen> {
                             color: AppColors.onSurface,
                             size: 18,
                           ),
-                          label: const Text(
-                            'Refresh Reflection',
-                            style: TextStyle(
+                          label: Text(
+                            s.refreshReflection,
+                            style: const TextStyle(
                               color: AppColors.onSurface,
                               fontWeight: FontWeight.w600,
                             ),
@@ -360,7 +376,7 @@ class _ReflectionScreenState extends State<ReflectionScreen> {
                             child: ElevatedButton.icon(
                               onPressed: _share,
                               icon: const Icon(Icons.share_rounded, size: 18),
-                              label: const Text('Share'),
+                              label: Text(s.share),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primaryContainer,
                                 foregroundColor: Colors.white,
@@ -384,7 +400,7 @@ class _ReflectionScreenState extends State<ReflectionScreen> {
                                     : Icons.bookmark_outline_rounded,
                                 size: 18,
                               ),
-                              label: Text(_saved ? 'Saved!' : 'Save'),
+                              label: Text(_saved ? s.saved : s.save),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: _saved
                                     ? AppColors.goldLight
@@ -420,11 +436,11 @@ class _ReflectionScreenState extends State<ReflectionScreen> {
                             ],
                           ),
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Text(
-                            'Finding peace\nin the present moment.',
+                            s.inspirationalFooter,
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,

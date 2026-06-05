@@ -39,9 +39,8 @@ class ReflectionService {
   static String get _apiKey => dotenv.env['GROQ_API_KEY'] ?? '';
   static const _model = 'llama-3.3-70b-versatile';
 
-  static Future<ReflectionData> fetchReflection() async {
-    // Check cache — same reflection all day
-    final cached = await _getCached();
+  static Future<ReflectionData> fetchReflection({bool isArabic = false}) async {
+    final cached = await _getCached(isArabic: isArabic);
     if (cached != null) return cached;
 
     final response = await http
@@ -62,60 +61,59 @@ class ReflectionService {
 Format exactly:
 {
   "arabic": "Arabic Quran verse text",
-  "translation": "English translation",
-  "reference": "Surah Name, Chapter:Verse",
-  "insight": "2-3 sentence practical reflection for a modern Muslim",
-  "theme": "One word theme e.g. Patience"
+  "translation": "${isArabic ? 'Arabic tafsir/explanation of the verse' : 'English translation'}",
+  "reference": "${isArabic ? 'اسم السورة، الفصل:الآية' : 'Surah Name, Chapter:Verse'}",
+  "insight": "${isArabic ? '2-3 جملة تأمل عملي بالعربية للمسلم المعاصر' : '2-3 sentence practical reflection for a modern Muslim'}",
+  "theme": "${isArabic ? 'كلمة واحدة موضوع مثل الصبر' : 'One word theme e.g. Patience'}"
 }''',
               },
               {
                 'role': 'user',
-                'content':
-                    'Give me a random Quran verse with reflection for today. Return only JSON.',
+                'content': isArabic
+                    ? 'أعطني آية قرآنية عشوائية مع تأمل لهذا اليوم. أرجع JSON فقط.'
+                    : 'Give me a random Quran verse with reflection for today. Return only JSON.',
               },
             ],
           }),
         )
         .timeout(const Duration(seconds: 15));
 
-    if (response.statusCode != 200) {
+    if (response.statusCode != 200)
       throw Exception('Groq API error: ${response.statusCode}');
-    }
 
     final data = jsonDecode(response.body);
     final text = data['choices'][0]['message']['content'] as String;
-
-    // Clean any accidental markdown
     final clean = text.replaceAll('```json', '').replaceAll('```', '').trim();
-
     final reflection = ReflectionData.fromJson(jsonDecode(clean));
-    await _cache(reflection);
+    await _cache(reflection, isArabic: isArabic);
     return reflection;
   }
 
-  // Cache reflection for today
-  static Future<void> _cache(ReflectionData r) async {
+  static Future<void> _cache(ReflectionData r, {bool isArabic = false}) async {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now().toIso8601String().substring(0, 10);
-    await prefs.setString('reflection_date', today);
-    await prefs.setString('reflection_data', jsonEncode(r.toJson()));
+    final key = isArabic ? 'ar' : 'en';
+    await prefs.setString('reflection_date_$key', today);
+    await prefs.setString('reflection_data_$key', jsonEncode(r.toJson()));
   }
 
-  static Future<ReflectionData?> _getCached() async {
+  static Future<ReflectionData?> _getCached({bool isArabic = false}) async {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now().toIso8601String().substring(0, 10);
-    final cachedDate = prefs.getString('reflection_date');
-    if (cachedDate != today) return null;
-    final raw = prefs.getString('reflection_data');
+    final key = isArabic ? 'ar' : 'en';
+    if (prefs.getString('reflection_date_$key') != today) return null;
+    final raw = prefs.getString('reflection_data_$key');
     if (raw == null) return null;
     return ReflectionData.fromJson(jsonDecode(raw));
   }
 
-  // Force fresh (ignore cache)
-  static Future<ReflectionData> refreshReflection() async {
+  static Future<ReflectionData> refreshReflection({
+    bool isArabic = false,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('reflection_date');
-    return fetchReflection();
+    final key = isArabic ? 'ar' : 'en';
+    await prefs.remove('reflection_date_$key');
+    return fetchReflection(isArabic: isArabic);
   }
 
   // Save to favourites

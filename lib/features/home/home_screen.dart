@@ -2,15 +2,45 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nur_app/core/l10n/app_strings.dart';
+import 'package:nur_app/features/reflection/reflection_service.dart';
 import '../../core/theme/app_colors.dart';
 import 'home_provider.dart';
-import 'package:go_router/go_router.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  ReflectionData? _reflection;
+  bool _reflectionLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReflection();
+  }
+
+  Future<void> _loadReflection() async {
+    try {
+      final r = await ReflectionService.fetchReflection(
+        isArabic: ref.read(stringsProvider).isArabic,
+      );
+      if (!mounted) return;
+      setState(() {
+        _reflection = r;
+        _reflectionLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _reflectionLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(homeProvider);
     final s = ref.watch(stringsProvider);
     final times = state.prayerTimes;
@@ -69,7 +99,12 @@ class HomeScreen extends ConsumerWidget {
                         const SizedBox(height: 16),
                         _buildQiblaRamadanRow(context, s),
                         const SizedBox(height: 16),
-                        _buildVerseCard(context, s),
+                        _buildVerseCard(
+                          context,
+                          s,
+                          _reflection,
+                          _reflectionLoading,
+                        ),
                         const SizedBox(height: 16),
                         _buildMosqueCard(s),
                         const SizedBox(height: 16),
@@ -352,7 +387,12 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildVerseCard(BuildContext context, AppStrings s) {
+  Widget _buildVerseCard(
+    BuildContext context,
+    AppStrings s,
+    ReflectionData? reflection,
+    bool loading,
+  ) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -365,8 +405,11 @@ class HomeScreen extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Text('✦', style: TextStyle(color: AppColors.gold, fontSize: 16)),
-              SizedBox(width: 10),
+              const Text(
+                '✦',
+                style: TextStyle(color: AppColors.gold, fontSize: 16),
+              ),
+              const SizedBox(width: 10),
               Text(
                 s.verseOfDay,
                 style: TextStyle(
@@ -378,55 +421,64 @@ class HomeScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 16),
-          const Directionality(
-            textDirection: TextDirection.rtl,
-            child: Text(
-              'فَإِنَّ مَعَ الْعُسْرِ يُسْرًا',
-              style: TextStyle(
-                fontSize: 22,
-                height: 1.8,
-                color: AppColors.onSurface,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            '"For indeed, with hardship [will be] ease."',
-            style: TextStyle(
-              fontSize: 15,
-              fontStyle: FontStyle.italic,
-              color: AppColors.onSurface,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Surah Ash-Sharh, 94:5',
-            style: TextStyle(fontSize: 13, color: AppColors.onSurfaceVariant),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () => context.go('/reflection'),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.surfaceVariant),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
+          if (loading)
+            const Center(
+              child: CircularProgressIndicator(color: AppColors.gold),
+            )
+          else if (reflection != null) ...[
+            Directionality(
+              textDirection: TextDirection.rtl,
               child: Text(
-                s.readReflection,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
+                reflection.arabic,
+                style: const TextStyle(
+                  fontSize: 22,
+                  height: 1.8,
                   color: AppColors.onSurface,
-                  letterSpacing: 1,
                 ),
               ),
             ),
-          ),
+            const SizedBox(height: 8),
+            Text(
+              '"${reflection.translation}"',
+              style: const TextStyle(
+                fontSize: 15,
+                fontStyle: FontStyle.italic,
+                color: AppColors.onSurface,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              reflection.reference,
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => context.go('/reflection'),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.surfaceVariant),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: Text(
+                  s.readReflection,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.onSurface,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -459,11 +511,15 @@ class HomeScreen extends ConsumerWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.navigation_rounded, color: Colors.white, size: 14),
-                  SizedBox(width: 6),
+                  const Icon(
+                    Icons.navigation_rounded,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                  const SizedBox(width: 6),
                   Text(
                     s.nearbyMosques,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nur_app/features/settings/settings_screen.dart';
 import 'features/splash/splash_screen.dart';
@@ -11,15 +12,16 @@ import 'features/quran/surah_screen.dart';
 import 'features/calendar/calendar_screen.dart';
 import 'features/ramadan/ramadan_screen.dart';
 import 'features/reflection/reflection_screen.dart';
+import 'core/l10n/app_strings.dart';
 
 final router = GoRouter(
   initialLocation: '/home',
   routes: [
-    GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
-    GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
-    GoRoute(path: '/calendar', builder: (_, __) => const CalendarScreen()),
-    GoRoute(path: '/ramadan', builder: (_, __) => const RamadanScreen()),
-    GoRoute(path: '/reflection', builder: (_, __) => const ReflectionScreen()),
+    GoRoute(path: '/splash', builder: (_, _) => const SplashScreen()),
+    GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingScreen()),
+    GoRoute(path: '/calendar', builder: (_, _) => const CalendarScreen()),
+    GoRoute(path: '/ramadan', builder: (_, _) => const RamadanScreen()),
+    GoRoute(path: '/reflection', builder: (_, _) => const ReflectionScreen()),
     GoRoute(
       path: '/surah/:number',
       builder: (_, state) =>
@@ -29,11 +31,11 @@ final router = GoRouter(
     ShellRoute(
       builder: (context, state, child) => MainShell(child: child),
       routes: [
-        GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
-        GoRoute(path: '/quran', builder: (_, __) => const QuranScreen()),
-        GoRoute(path: '/tasbeeh', builder: (_, __) => const TasbeehScreen()),
-        GoRoute(path: '/qibla', builder: (_, __) => const QiblaScreen()),
-        GoRoute(path: '/more', builder: (_, __) => const SettingsScreen()),
+        GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
+        GoRoute(path: '/quran', builder: (_, _) => const QuranScreen()),
+        GoRoute(path: '/tasbeeh', builder: (_, _) => const TasbeehScreen()),
+        GoRoute(path: '/qibla', builder: (_, _) => const QiblaScreen()),
+        GoRoute(path: '/more', builder: (_, _) => const SettingsScreen()),
       ],
     ),
   ],
@@ -63,18 +65,20 @@ class MainShell extends StatelessWidget {
   }
 }
 
-class _NurBottomNav extends StatelessWidget {
+class _NurBottomNav extends ConsumerWidget {
   final int selectedIndex;
   const _NurBottomNav({required this.selectedIndex});
 
   @override
-  Widget build(BuildContext context) {
-    const items = [
-      (icon: Icons.home_rounded, label: 'Home', path: '/home'),
-      (icon: Icons.menu_book_rounded, label: 'Quran', path: '/quran'),
-      (icon: Icons.fingerprint_rounded, label: 'Tasbeeh', path: '/tasbeeh'),
-      (icon: Icons.explore_rounded, label: 'Qibla', path: '/qibla'),
-      (icon: Icons.more_horiz_rounded, label: 'More', path: '/more'),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
+
+    final items = [
+      (icon: Icons.home_rounded, label: s.home, path: '/home'),
+      (icon: Icons.menu_book_rounded, label: s.quran, path: '/quran'),
+      (icon: Icons.fingerprint_rounded, label: s.tasbeeh, path: '/tasbeeh'),
+      (icon: Icons.explore_rounded, label: s.qibla, path: '/qibla'),
+      (icon: Icons.more_horiz_rounded, label: s.more, path: '/more'),
     ];
 
     return Container(

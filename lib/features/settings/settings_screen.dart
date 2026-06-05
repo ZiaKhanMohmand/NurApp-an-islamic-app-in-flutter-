@@ -23,7 +23,6 @@ class SettingsScreen extends ConsumerWidget {
               // AppBar
               Row(
                 children: [
-                  const Icon(Icons.menu_rounded, color: AppColors.primary),
                   const Expanded(
                     child: Text(
                       'NurApp',
@@ -34,10 +33,6 @@ class SettingsScreen extends ConsumerWidget {
                         color: AppColors.primary,
                       ),
                     ),
-                  ),
-                  const Icon(
-                    Icons.calendar_month_rounded,
-                    color: AppColors.primary,
                   ),
                 ],
               ),
@@ -89,7 +84,7 @@ class SettingsScreen extends ConsumerWidget {
                 trailing: Switch(
                   value: settings.themeMode == ThemeMode.dark,
                   onChanged: (_) => notifier.toggleTheme(),
-                  activeColor: AppColors.gold,
+                  activeThumbColor: AppColors.gold,
                 ),
                 onTap: () => notifier.toggleTheme(),
               ),

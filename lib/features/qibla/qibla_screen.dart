@@ -1,16 +1,18 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_compass/flutter_compass.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:nur_app/core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 
-class QiblaScreen extends StatefulWidget {
+class QiblaScreen extends ConsumerStatefulWidget {
   const QiblaScreen({super.key});
   @override
-  State<QiblaScreen> createState() => _QiblaScreenState();
+  ConsumerState<QiblaScreen> createState() => _QiblaScreenState();
 }
 
-class _QiblaScreenState extends State<QiblaScreen> {
+class _QiblaScreenState extends ConsumerState<QiblaScreen> {
   // Kaaba coordinates
   static const double _kaabaLat = 21.4225;
   static const double _kaabaLng = 39.8262;
@@ -20,10 +22,10 @@ class _QiblaScreenState extends State<QiblaScreen> {
   double _distanceKm = 0;
   String _city = 'Locating...';
   bool _hasPermission = false;
-  String _accuracy = 'CALIBRATING';
 
   @override
   void initState() {
+    _hasPermission = true;
     super.initState();
     _init();
   }
@@ -45,7 +47,6 @@ class _QiblaScreenState extends State<QiblaScreen> {
         _city =
             '${pos.latitude.toStringAsFixed(2)}, ${pos.longitude.toStringAsFixed(2)}';
         _hasPermission = true;
-        _accuracy = 'HIGH ACCURACY';
       });
 
       // Start compass stream
@@ -55,7 +56,12 @@ class _QiblaScreenState extends State<QiblaScreen> {
         }
       });
     } catch (e) {
-      setState(() => _accuracy = 'PERMISSION NEEDED');
+      setState(() {
+        _hasPermission = false;
+        _city = ref.read(stringsProvider).isArabic
+            ? 'يرجى تمكين خدمات الموقع'
+            : 'Please enable location services';
+      });
     }
   }
 
@@ -92,6 +98,13 @@ class _QiblaScreenState extends State<QiblaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = ref.watch(stringsProvider);
+    final accuracy = _hasPermission
+        ? strings.highAccuracy
+        : strings.isArabic
+        ? 'إذن مطلوب'
+        : 'PERMISSION NEEDED';
+
     // Needle rotation = qibla angle - compass heading
     final needleAngle = _compassHeading != null
         ? (_qiblaAngle - _compassHeading!) * math.pi / 180
@@ -115,7 +128,6 @@ class _QiblaScreenState extends State<QiblaScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.menu_rounded, color: AppColors.primary),
                       const Expanded(
                         child: Text(
                           'NurApp',
@@ -126,10 +138,6 @@ class _QiblaScreenState extends State<QiblaScreen> {
                             color: AppColors.primary,
                           ),
                         ),
-                      ),
-                      const Icon(
-                        Icons.calendar_month_rounded,
-                        color: AppColors.primary,
                       ),
                     ],
                   ),
@@ -162,14 +170,12 @@ class _QiblaScreenState extends State<QiblaScreen> {
                         height: 8,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: _accuracy == 'HIGH ACCURACY'
-                              ? Colors.green
-                              : Colors.orange,
+                          color: _hasPermission ? Colors.green : Colors.orange,
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        _accuracy,
+                        accuracy,
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -241,9 +247,9 @@ class _QiblaScreenState extends State<QiblaScreen> {
                 const SizedBox(height: 24),
 
                 // Distance
-                const Text(
-                  'DISTANCE TO MAKKAH',
-                  style: TextStyle(
+                Text(
+                  strings.distanceToMakkah,
+                  style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: AppColors.onSurfaceVariant,
@@ -255,16 +261,18 @@ class _QiblaScreenState extends State<QiblaScreen> {
                   text: TextSpan(
                     children: [
                       TextSpan(
-                        text: _distanceKm.toStringAsFixed(0),
+                        text: strings.toLocalNum(
+                          _distanceKm.toStringAsFixed(0),
+                        ),
                         style: const TextStyle(
                           fontSize: 48,
                           fontWeight: FontWeight.w700,
                           color: AppColors.primary,
                         ),
                       ),
-                      const TextSpan(
-                        text: ' km',
-                        style: TextStyle(
+                      TextSpan(
+                        text: strings.isArabic ? ' كم' : ' km',
+                        style: const TextStyle(
                           fontSize: 20,
                           color: AppColors.gold,
                           fontWeight: FontWeight.w600,
@@ -304,7 +312,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Qibla Angle: ${_qiblaAngle.toStringAsFixed(1)}°',
+                          '${strings.qiblaAngle}: ${strings.toLocalNum(_qiblaAngle.toStringAsFixed(1))}°',
                           style: const TextStyle(
                             fontSize: 13,
                             color: AppColors.onSurfaceVariant,

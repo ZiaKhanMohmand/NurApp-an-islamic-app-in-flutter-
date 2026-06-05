@@ -53,11 +53,14 @@ class AppStrings {
   String get todayHistory => isArabic ? 'سجل اليوم' : 'Today\'s History';
   String get sessions => isArabic ? 'جلسات' : 'Sessions';
   String get goal => isArabic ? 'الهدف' : 'Goal';
+  String get noSessionsToday =>
+      isArabic ? 'لا توجد جلسات اليوم' : 'No sessions yet today';
 
   // Quran
   String get searchSurah =>
       isArabic ? 'ابحث عن سورة...' : 'Search Surah or Verse...';
   String get lastRead => isArabic ? 'آخر قراءة' : 'LAST READ';
+  String get surahs => isArabic ? 'السور' : 'SURAH';
   String get verses => isArabic ? 'آيات' : 'VERSES';
   String get jumpToAyah =>
       isArabic ? 'انتقل إلى رقم الآية...' : 'Jump to Ayah number...';
@@ -72,6 +75,9 @@ class AppStrings {
   String get share => isArabic ? 'مشاركة' : 'Share';
   String get save => isArabic ? 'حفظ' : 'Save';
   String get saved => isArabic ? 'محفوظ!' : 'Saved!';
+  String get inspirationalFooter => isArabic
+      ? 'العثور على السلام\nفي اللحظة الحالية'
+      : 'Finding peace\nin the present moment';
 
   // Ramadan
   String get ramadanKareem => isArabic ? 'رمضان كريم' : 'Ramadan Kareem';
@@ -101,6 +107,82 @@ class AppStrings {
 
   // Calendar
   String get upcomingEvents => isArabic ? 'الأحداث القادمة' : 'Upcoming Events';
+  String get hijriCalendar => isArabic ? 'التقويم الهجري' : 'Hijri Calendar';
+
+  // Hijri Month Names
+  String get muharram => isArabic ? 'محرم' : 'Muharram';
+  String get safar => isArabic ? 'صفر' : 'Safar';
+  String get rabiAlAwwal => isArabic ? 'ربيع الأول' : 'Rabi Al-Awwal';
+  String get rabiAlThani => isArabic ? 'ربيع الآخر' : 'Rabi Al-Thani';
+  String get jumadaAlAwwal => isArabic ? 'جمادى الأولى' : 'Jumada Al-Awwal';
+  String get jumadaAlThani => isArabic ? 'جمادى الآخرة' : 'Jumada Al-Thani';
+  String get rajab => isArabic ? 'رجب' : 'Rajab';
+  String get shaban => isArabic ? 'شعبان' : 'Sha\'ban';
+  String get ramadan => isArabic ? 'رمضان' : 'Ramadan';
+  String get shawwal => isArabic ? 'شوال' : 'Shawwal';
+  String get dhulQadah => isArabic ? 'ذو القعدة' : 'Dhul Qa\'dah';
+  String get dhulHijjah => isArabic ? 'ذو الحجة' : 'Dhul Hijjah';
+
+  // Islamic Events Names
+  String get dayOfAshura => isArabic ? 'يوم عاشوراء' : 'Day of Ashura';
+  String get mawlidAlNabi =>
+      isArabic ? 'المولد النبوي الشريف' : 'Mawlid Al-Nabi';
+  String get israWalMiraj =>
+      isArabic ? 'الإسراء والمعراج' : 'Isra\' Wal Mi\'raj';
+  String get midShaban => isArabic ? 'ليلة النصف من شعبان' : 'Mid Sha\'ban';
+  String get ramadanBegins => isArabic ? 'بداية شهر رمضان' : 'Ramadan Begins';
+  String get eidAlFitr => isArabic ? 'عيد الفطر السعيد' : 'Eid Al-Fitr';
+  String get eidAlAdha => isArabic ? 'عيد الأضحى المبارك' : 'Eid Al-Adha';
+
+  // Gregorian Months Short
+  String shortMonth(int m) {
+    if (isArabic) {
+      return [
+        'يناير',
+        'فبراير',
+        'مارس',
+        'أبريل',
+        'مايو',
+        'يونيو',
+        'يوليو',
+        'أغسطس',
+        'سبتمبر',
+        'أكتوبر',
+        'نوفمبر',
+        'ديسمبر',
+      ][m - 1];
+    }
+    return [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ][m - 1];
+  }
+
+  // Weekdays Short
+  String shortWeekday(int w) {
+    if (isArabic) {
+      return [
+        'الأحد',
+        'الإثنين',
+        'الثلاثاء',
+        'الأربعاء',
+        'الخميس',
+        'الجمعة',
+        'السبت',
+      ][w % 7];
+    }
+    return ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][w % 7];
+  }
 }
 
 // Provider

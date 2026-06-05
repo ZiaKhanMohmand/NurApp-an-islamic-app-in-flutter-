@@ -1,61 +1,64 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hijri/hijri_calendar.dart';
+import 'package:nur_app/core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 
-class CalendarScreen extends StatefulWidget {
+class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
   @override
-  State<CalendarScreen> createState() => _CalendarScreenState();
+  ConsumerState<CalendarScreen> createState() => _CalendarScreenState();
 }
 
-class _CalendarScreenState extends State<CalendarScreen> {
+class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   late HijriCalendar _currentHijri;
   late DateTime _currentGreg;
   int _hijriMonth = 0;
   int _hijriYear = 0;
 
+  // Key tracking references to translated string getters
   final List<Map<String, dynamic>> _islamicEvents = [
     {
       'hijriMonth': 1,
       'hijriDay': 10,
-      'name': 'Day of Ashura',
+      'stringKey': 'dayOfAshura',
       'monthAbbr': 'MUH',
     },
     {
       'hijriMonth': 3,
       'hijriDay': 12,
-      'name': 'Mawlid Al-Nabi',
+      'stringKey': 'mawlidAlNabi',
       'monthAbbr': 'RAB',
     },
     {
       'hijriMonth': 7,
       'hijriDay': 27,
-      'name': 'Isra\' Wal Mi\'raj',
+      'stringKey': 'israWalMiraj',
       'monthAbbr': 'RAJ',
     },
     {
       'hijriMonth': 8,
       'hijriDay': 15,
-      'name': 'Mid Sha\'ban',
+      'stringKey': 'midShaban',
       'monthAbbr': 'SHA',
     },
     {
       'hijriMonth': 9,
       'hijriDay': 1,
-      'name': 'Ramadan Begins',
+      'stringKey': 'ramadanBegins',
       'monthAbbr': 'RAM',
     },
     {
       'hijriMonth': 10,
       'hijriDay': 1,
-      'name': 'Eid Al-Fitr',
+      'stringKey': 'eidAlFitr',
       'monthAbbr': 'SHW',
     },
     {
       'hijriMonth': 12,
       'hijriDay': 10,
-      'name': 'Eid Al-Adha',
+      'stringKey': 'eidAlAdha',
       'monthAbbr': 'DHU',
     },
   ];
@@ -86,28 +89,27 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
   });
 
-  String _hijriMonthName(int m) => [
-    'Muharram',
-    'Safar',
-    'Rabi Al-Awwal',
-    'Rabi Al-Thani',
-    'Jumada Al-Awwal',
-    'Jumada Al-Thani',
-    'Rajab',
-    'Sha\'ban',
-    'Ramadan',
-    'Shawwal',
-    'Dhul Qa\'dah',
-    'Dhul Hijjah',
-  ][m - 1];
+  String _getHijriMonthName(AppStrings s, int m) {
+    return [
+      s.muharram,
+      s.safar,
+      s.rabiAlAwwal,
+      s.rabiAlThani,
+      s.jumadaAlAwwal,
+      s.jumadaAlThani,
+      s.rajab,
+      s.shaban,
+      s.ramadan,
+      s.shawwal,
+      s.dhulQadah,
+      s.dhulHijjah,
+    ][m - 1];
+  }
 
-  // Get days in hijri month
   int _daysInHijriMonth(int month, int year) {
-    // Hijri months alternate 30/29 days
     return month % 2 == 1 ? 30 : 29;
   }
 
-  // Get weekday of 1st of hijri month
   int _firstWeekday(int month, int year) {
     final greg = HijriCalendar()
       ..hYear = year
@@ -116,15 +118,33 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return greg.hijriToGregorian(year, month, 1).weekday % 7;
   }
 
+  String _getEventName(AppStrings s, String key) {
+    switch (key) {
+      case 'dayOfAshura':
+        return s.dayOfAshura;
+      case 'mawlidAlNabi':
+        return s.mawlidAlNabi;
+      case 'israWalMiraj':
+        return s.israWalMiraj;
+      case 'midShaban':
+        return s.midShaban;
+      case 'ramadanBegins':
+        return s.ramadanBegins;
+      case 'eidAlFitr':
+        return s.eidAlFitr;
+      case 'eidAlAdha':
+        return s.eidAlAdha;
+      default:
+        return '';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(stringsProvider);
     final today = HijriCalendar.fromDate(DateTime.now());
     final daysInMonth = _daysInHijriMonth(_hijriMonth, _hijriYear);
     final firstDay = _firstWeekday(_hijriMonth, _hijriYear);
-    final upcomingEvents = _islamicEvents
-        .where((e) => e['hijriMonth'] >= _hijriMonth)
-        .take(3)
-        .toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -143,11 +163,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     ),
                     onPressed: () => context.go('/home'),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Hijri Calendar',
+                      s.hijriCalendar,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
                         color: AppColors.primary,
@@ -182,7 +202,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         Column(
                           children: [
                             Text(
-                              _hijriMonthName(_hijriMonth),
+                              _getHijriMonthName(s, _hijriMonth),
                               style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
@@ -190,7 +210,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               ),
                             ),
                             Text(
-                              '$_hijriYear AH',
+                              '${s.toLocalNum(_hijriYear.toString())} ${s.isArabic ? 'هـ' : 'AH'}',
                               style: const TextStyle(
                                 fontSize: 13,
                                 color: AppColors.onSurfaceVariant,
@@ -231,35 +251,24 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               ),
                             ),
                             child: Row(
-                              children:
-                                  [
-                                        'SUN',
-                                        'MON',
-                                        'TUE',
-                                        'WED',
-                                        'THU',
-                                        'FRI',
-                                        'SAT',
-                                      ]
-                                      .map(
-                                        (d) => Expanded(
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 10,
-                                            ),
-                                            child: Text(
-                                              d,
-                                              textAlign: TextAlign.center,
-                                              style: const TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w700,
-                                                color: AppColors.gold,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      )
-                                      .toList(),
+                              children: List.generate(7, (index) {
+                                return Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 10,
+                                    ),
+                                    child: Text(
+                                      s.shortWeekday(index),
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.gold,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }),
                             ),
                           ),
 
@@ -292,7 +301,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                       e['hijriDay'] == dayNum,
                                 );
 
-                                // Get gregorian date
                                 final greg = HijriCalendar()
                                   ..hYear = _hijriYear
                                   ..hMonth = _hijriMonth
@@ -323,7 +331,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Text(
-                                        '$dayNum',
+                                        s.toLocalNum(dayNum.toString()),
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w700,
@@ -333,7 +341,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                         ),
                                       ),
                                       Text(
-                                        '${gregDate.day} ${_shortMonth(gregDate.month)}',
+                                        '${s.toLocalNum(gregDate.day.toString())} ${s.shortMonth(gregDate.month)}',
                                         style: TextStyle(
                                           fontSize: 8,
                                           color: isToday
@@ -341,7 +349,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                               : AppColors.onSurfaceVariant,
                                         ),
                                       ),
-                                      if (isEvent)
+                                      if (isEvent) ...[
+                                        const SizedBox(height: 2),
                                         Container(
                                           width: 4,
                                           height: 4,
@@ -350,6 +359,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                             color: AppColors.gold,
                                           ),
                                         ),
+                                      ],
                                     ],
                                   ),
                                 );
@@ -362,20 +372,20 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
                     const SizedBox(height: 24),
 
-                    // Upcoming events
+                    // Upcoming events header
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Upcoming Events',
-                          style: TextStyle(
+                        Text(
+                          s.upcomingEvents,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             color: AppColors.onSurface,
                           ),
                         ),
                         Text(
-                          _hijriMonthName(_hijriMonth).toUpperCase(),
+                          _getHijriMonthName(s, _hijriMonth).toUpperCase(),
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -387,8 +397,22 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     ),
                     const SizedBox(height: 12),
 
+                    // Event card mapping list
                     ..._islamicEvents.map(
-                      (e) => _EventCard(event: e, hijriYear: _hijriYear),
+                      (e) => _EventCard(
+                        event: e,
+                        hijriYear: _hijriYear,
+                        eventName: _getEventName(s, e['stringKey']),
+                        shortMonthText: s.shortMonth(
+                          HijriCalendar()
+                              .hijriToGregorian(
+                                _hijriYear,
+                                e['hijriMonth'],
+                                e['hijriDay'],
+                              )
+                              .month,
+                        ),
+                      ),
                     ),
 
                     const SizedBox(height: 24),
@@ -401,31 +425,25 @@ class _CalendarScreenState extends State<CalendarScreen> {
       ),
     );
   }
-
-  String _shortMonth(int m) => [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ][m - 1];
 }
 
-class _EventCard extends StatelessWidget {
+class _EventCard extends ConsumerWidget {
   final Map<String, dynamic> event;
   final int hijriYear;
-  const _EventCard({required this.event, required this.hijriYear});
+  final String eventName;
+  final String shortMonthText;
+
+  const _EventCard({
+    required this.event,
+    required this.hijriYear,
+    required this.eventName,
+    required this.shortMonthText,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    // Convert to gregorian
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
+
     final greg = HijriCalendar()
       ..hYear = hijriYear
       ..hMonth = event['hijriMonth']
@@ -436,21 +454,19 @@ class _EventCard extends StatelessWidget {
       event['hijriDay'],
     );
 
-    final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
+    final weekdaysAr = [
+      'الإثنين',
+      'الثلاثاء',
+      'الأربعاء',
+      'الخميس',
+      'الجمعة',
+      'السبت',
+      'الأحد',
     ];
-    final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final weekdaysEn = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final weekdayText = s.isArabic
+        ? weekdaysAr[gregDate.weekday - 1]
+        : weekdaysEn[gregDate.weekday - 1];
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -474,7 +490,7 @@ class _EventCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  '${event['hijriDay']}',
+                  s.toLocalNum(event['hijriDay'].toString()),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -482,7 +498,7 @@ class _EventCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  event['monthAbbr'],
+                  event['monthAbbr'], // Keeps standard system abbreviation code
                   style: const TextStyle(
                     fontSize: 10,
                     color: AppColors.onSurfaceVariant,
@@ -498,7 +514,7 @@ class _EventCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  event['name'],
+                  eventName,
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -507,7 +523,9 @@ class _EventCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${weekdays[gregDate.weekday - 1]}, ${gregDate.day} ${months[gregDate.month - 1]} ${gregDate.year}',
+                  s.isArabic
+                      ? '$weekdayText، ${s.toLocalNum(gregDate.day.toString())} $shortMonthText ${s.toLocalNum(gregDate.year.toString())}'
+                      : '$weekdayText, ${gregDate.day} $shortMonthText ${gregDate.year}',
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.onSurfaceVariant,

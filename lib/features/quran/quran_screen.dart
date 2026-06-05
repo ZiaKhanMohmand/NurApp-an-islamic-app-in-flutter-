@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nur_app/core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import 'quran_service.dart';
 
-class QuranScreen extends StatefulWidget {
+class QuranScreen extends ConsumerStatefulWidget {
   const QuranScreen({super.key});
   @override
-  State<QuranScreen> createState() => _QuranScreenState();
+  ConsumerState<QuranScreen> createState() => _QuranScreenState();
 }
 
-class _QuranScreenState extends State<QuranScreen> {
+class _QuranScreenState extends ConsumerState<QuranScreen> {
   List<Surah> _surahs = [];
   List<Surah> _filtered = [];
   Map<String, dynamic>? _lastRead;
@@ -22,9 +24,18 @@ class _QuranScreenState extends State<QuranScreen> {
     _load();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
     final surahs = await QuranService.fetchSurahs();
     final lastRead = await QuranService.getLastRead();
+
+    if (!mounted) return;
+
     setState(() {
       _surahs = surahs;
       _filtered = surahs;
@@ -48,6 +59,7 @@ class _QuranScreenState extends State<QuranScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(stringsProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -58,7 +70,6 @@ class _QuranScreenState extends State<QuranScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  const Icon(Icons.menu_rounded, color: AppColors.primary),
                   const Expanded(
                     child: Text(
                       'NurApp',
@@ -69,10 +80,6 @@ class _QuranScreenState extends State<QuranScreen> {
                         color: AppColors.primary,
                       ),
                     ),
-                  ),
-                  const Icon(
-                    Icons.calendar_month_rounded,
-                    color: AppColors.primary,
                   ),
                 ],
               ),
@@ -85,7 +92,7 @@ class _QuranScreenState extends State<QuranScreen> {
                 controller: _searchController,
                 onChanged: _search,
                 decoration: InputDecoration(
-                  hintText: 'Search Surah or Verse...',
+                  hintText: s.searchSurah,
                   hintStyle: const TextStyle(
                     color: AppColors.onSurfaceVariant,
                     fontSize: 14,
@@ -122,6 +129,9 @@ class _QuranScreenState extends State<QuranScreen> {
                     if (_lastRead != null) ...[
                       _LastReadCard(
                         data: _lastRead!,
+                        surah: _surahs.firstWhere(
+                          (s) => s.number == _lastRead!['surah'],
+                        ),
                         onTap: () =>
                             context.go('/surah/${_lastRead!['surah']}'),
                       ),
@@ -129,8 +139,8 @@ class _QuranScreenState extends State<QuranScreen> {
                     ],
 
                     // Tab label
-                    const Text(
-                      'Surah',
+                    Text(
+                      s.surahs,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -158,13 +168,19 @@ class _QuranScreenState extends State<QuranScreen> {
   }
 }
 
-class _LastReadCard extends StatelessWidget {
+class _LastReadCard extends ConsumerWidget {
   final Map<String, dynamic> data;
   final VoidCallback onTap;
-  const _LastReadCard({required this.data, required this.onTap});
+  final Surah surah;
+  const _LastReadCard({
+    required this.data,
+    required this.onTap,
+    required this.surah,
+  });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -179,7 +195,7 @@ class _LastReadCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
                       Icon(
                         Icons.bookmark_rounded,
@@ -188,7 +204,7 @@ class _LastReadCard extends StatelessWidget {
                       ),
                       SizedBox(width: 6),
                       Text(
-                        'LAST READ',
+                        s.lastRead,
                         style: TextStyle(
                           fontSize: 11,
                           color: AppColors.gold,
@@ -200,7 +216,7 @@ class _LastReadCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    data['surahName'],
+                    s.isArabic ? surah.name : surah.englishName,
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
@@ -230,13 +246,14 @@ class _LastReadCard extends StatelessWidget {
   }
 }
 
-class _SurahTile extends StatelessWidget {
+class _SurahTile extends ConsumerWidget {
   final Surah surah;
   final VoidCallback onTap;
   const _SurahTile({required this.surah, required this.onTap});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -259,7 +276,7 @@ class _SurahTile extends StatelessWidget {
               ),
               child: Center(
                 child: Text(
-                  '${surah.number}',
+                  s.toLocalNum(surah.number.toString()),
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -284,7 +301,7 @@ class _SurahTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${surah.numberOfAyahs} VERSES • ${surah.revelationType.toUpperCase()}',
+                    '${surah.numberOfAyahs} ${s.verses} • ${surah.revelationType.toUpperCase()}',
                     style: const TextStyle(
                       fontSize: 11,
                       color: AppColors.onSurfaceVariant,

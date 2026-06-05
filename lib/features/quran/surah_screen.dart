@@ -1,23 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nur_app/core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import 'quran_service.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
-class SurahScreen extends StatefulWidget {
+class SurahScreen extends ConsumerStatefulWidget {
   final int number;
   const SurahScreen({super.key, required this.number});
   @override
-  State<SurahScreen> createState() => _SurahScreenState();
+  ConsumerState<SurahScreen> createState() => _SurahScreenState();
 }
 
-class _SurahScreenState extends State<SurahScreen> {
+class _SurahScreenState extends ConsumerState<SurahScreen> {
   List<Ayah> _ayahs = [];
   bool _loading = true;
   double _fontSize = 22;
-  Set<int> _bookmarked = {};
-  String _surahName = '';
+  final Set<int> _bookmarked = {};
+  Surah? _surah;
 
   final TextEditingController _ayahController = TextEditingController();
   final ItemScrollController _itemScrollController = ItemScrollController();
@@ -55,21 +57,40 @@ class _SurahScreenState extends State<SurahScreen> {
   }
 
   Future<void> _load() async {
-    final ayahs = await QuranService.fetchAyahs(widget.number);
+    final s = ref.read(stringsProvider);
+    final results = await Future.wait([
+      QuranService.fetchAyahs(widget.number),
+      QuranService.fetchSurahs(),
+    ]);
+    final ayahs = results[0] as List<Ayah>;
+    final surahs = results[1] as List<Surah>;
+    final surah = surahs.firstWhere((su) => su.number == widget.number);
+
     await QuranService.saveLastRead(
       widget.number,
-      'Surah ${widget.number}',
+      s.isArabic ? surah.name : surah.englishName,
       1,
       1,
     );
+
+    if (!mounted) return;
     setState(() {
       _ayahs = ayahs;
+      _surah = surah;
+      _loading = false;
+    });
+
+    setState(() {
+      _ayahs = ayahs;
+      _surah = surah;
       _loading = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(stringsProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -89,7 +110,9 @@ class _SurahScreenState extends State<SurahScreen> {
                   ),
                   Expanded(
                     child: Text(
-                      'Surah ${widget.number}',
+                      _surah == null
+                          ? s.toLocalNum(widget.number.toString())
+                          : (s.isArabic ? _surah!.name : _surah!.englishName),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 18,
@@ -131,7 +154,7 @@ class _SurahScreenState extends State<SurahScreen> {
                       controller: _ayahController,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        hintText: 'Jump to Ayah number...',
+                        hintText: s.jumpToAyah,
                         hintStyle: const TextStyle(
                           color: AppColors.onSurfaceVariant,
                           fontSize: 13,
@@ -190,7 +213,9 @@ class _SurahScreenState extends State<SurahScreen> {
                   itemCount: _ayahs.length,
                   itemBuilder: (_, i) => _AyahCard(
                     ayah: _ayahs[i],
+
                     fontSize: _fontSize,
+
                     bookmarked: _bookmarked.contains(_ayahs[i].number),
                     onBookmark: () => setState(() {
                       if (_bookmarked.contains(_ayahs[i].number)) {
@@ -219,14 +244,13 @@ class _SurahScreenState extends State<SurahScreen> {
   }
 }
 
-class _AyahCard extends StatelessWidget {
+class _AyahCard extends ConsumerWidget {
   final Ayah ayah;
   final double fontSize;
   final bool bookmarked;
   final VoidCallback onBookmark;
   final VoidCallback onCopy;
   const _AyahCard({
-    super.key,
     required this.ayah,
     required this.fontSize,
     required this.bookmarked,
@@ -235,7 +259,8 @@ class _AyahCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -290,7 +315,7 @@ class _AyahCard extends StatelessWidget {
                 ),
                 child: Center(
                   child: Text(
-                    '${ayah.number}',
+                    s.toLocalNum(ayah.number.toString()),
                     style: const TextStyle(
                       fontSize: 11,
                       color: Colors.white,
@@ -306,27 +331,33 @@ class _AyahCard extends StatelessWidget {
           // Arabic text (RTL)
           Directionality(
             textDirection: TextDirection.rtl,
-            child: Text(
-              ayah.arabic,
-              style: TextStyle(
-                fontSize: fontSize,
-                height: 2.0,
-                color: AppColors.onSurface,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                ayah.arabic,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  height: 2.0,
+                  color: AppColors.onSurface,
+                ),
+                textAlign: TextAlign.right,
               ),
-              textAlign: TextAlign.right,
             ),
           ),
           const Divider(height: 20, color: AppColors.surfaceVariant),
 
           // Translation (LTR)
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              ayah.translation,
-              style: const TextStyle(
-                fontSize: 14,
-                height: 1.6,
-                color: AppColors.onSurfaceVariant,
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                ayah.translation,
+                style: const TextStyle(
+                  fontSize: 14,
+                  height: 1.6,
+                  color: AppColors.onSurfaceVariant,
+                ),
               ),
             ),
           ),
