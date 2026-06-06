@@ -5,6 +5,7 @@ import 'package:nur_app/core/l10n/app_strings.dart';
 import 'package:nur_app/features/reflection/reflection_service.dart';
 import '../../core/theme/app_colors.dart';
 import 'home_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -37,6 +38,63 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (!mounted) return;
       setState(() => _reflectionLoading = false);
     }
+  }
+
+  Future<void> _openNearbyMosques() async {
+    final url = Uri.parse('https://www.google.com/maps/search/mosque+near+me');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Widget _buildAdhanBanner(HomeState state, AppStrings s) {
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          margin: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            color: AppColors.primaryContainer,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.gold, width: 1.5),
+            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 12)],
+          ),
+          child: Row(
+            children: [
+              const Text('🕌', style: TextStyle(fontSize: 28)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'حَيَّ عَلَى الصَّلَاة',
+                      style: TextStyle(
+                        color: AppColors.gold,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      "Hayya 'alas-Salah — ${translatePrayer(state.currentPrayer, s)}",
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+              GestureDetector(
+                onTap: () => ref.read(homeProvider.notifier).dismissAdhan(),
+                child: const Icon(Icons.close, color: Colors.white54, size: 20),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -84,35 +142,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ? const Center(
               child: CircularProgressIndicator(color: AppColors.gold),
             )
-          : SafeArea(
-              child: CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(child: _buildAppBar(context, state, s)),
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        const SizedBox(height: 12),
-                        _buildHeroCard(state, s),
-                        const SizedBox(height: 20),
-                        _buildPrayerTimesRow(prayers, s),
-                        const SizedBox(height: 16),
-                        _buildQiblaRamadanRow(context, s),
-                        const SizedBox(height: 16),
-                        _buildVerseCard(
-                          context,
-                          s,
-                          _reflection,
-                          _reflectionLoading,
+          : Stack(
+              children: [
+                SafeArea(
+                  child: CustomScrollView(
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: _buildAppBar(context, state, s),
+                      ),
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate([
+                            const SizedBox(height: 12),
+                            _buildHeroCard(state, s),
+                            const SizedBox(height: 20),
+                            _buildPrayerTimesRow(prayers, s),
+                            const SizedBox(height: 16),
+                            _buildQiblaRamadanRow(context, s),
+                            const SizedBox(height: 16),
+                            _buildVerseCard(
+                              context,
+                              s,
+                              _reflection,
+                              _reflectionLoading,
+                            ),
+                            const SizedBox(height: 16),
+                            GestureDetector(
+                              onTap: _openNearbyMosques,
+                              child: _buildMosqueCard(s),
+                            ),
+                            const SizedBox(height: 16),
+                          ]),
                         ),
-                        const SizedBox(height: 16),
-                        _buildMosqueCard(s),
-                        const SizedBox(height: 16),
-                      ]),
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                if (state.showAdhan) _buildAdhanBanner(state, s),
+              ],
             ),
     );
   }
@@ -237,7 +305,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Text(
                 '${s.next}: ${translatePrayerName(state.nextPrayer, s)} ${s.isArabic ? "في" : "at"} ${s.toLocalNum(state.nextPrayerTime)}',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 14,
                 ),
               ),
@@ -281,7 +349,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: prayers.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            separatorBuilder: (_, _) => const SizedBox(width: 10),
             itemBuilder: (_, i) => _PrayerCard(prayer: prayers[i]),
           ),
         ),
@@ -373,7 +441,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
                       value: 0.5,
-                      backgroundColor: Colors.white.withOpacity(0.2),
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
                       valueColor: const AlwaysStoppedAnimation(AppColors.gold),
                       minHeight: 4,
                     ),
@@ -504,9 +572,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
+                color: Colors.white.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withOpacity(0.3)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -539,8 +607,9 @@ String translatePrayer(String prayer, AppStrings s) {
   if (prayer == 'Fajr') return s.isArabic ? 'صلاة ${s.fajr}' : 'Fajr Prayer';
   if (prayer == 'Dhuhr') return s.isArabic ? 'صلاة ${s.dhuhr}' : 'Dhuhr Prayer';
   if (prayer == 'Asr') return s.isArabic ? 'صلاة ${s.asr}' : 'Asr Prayer';
-  if (prayer == 'Maghrib')
+  if (prayer == 'Maghrib') {
     return s.isArabic ? 'صلاة ${s.maghrib}' : 'Maghrib Prayer';
+  }
   if (prayer == 'Isha') return s.isArabic ? 'صلاة ${s.isha}' : 'Isha Prayer';
   return prayer;
 }
@@ -601,7 +670,7 @@ class _PrayerCard extends StatelessWidget {
             size: 14,
             color: active
                 ? AppColors.primary
-                : AppColors.onSurfaceVariant.withOpacity(0.5),
+                : AppColors.onSurfaceVariant.withValues(alpha: 0.5),
           ),
         ],
       ),
@@ -613,7 +682,7 @@ class _CardPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.gold.withOpacity(0.08)
+      ..color = AppColors.gold.withValues(alpha: 0.08)
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
     const spacing = 40.0;

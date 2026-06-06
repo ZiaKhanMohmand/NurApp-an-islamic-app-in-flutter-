@@ -78,8 +78,9 @@ Format exactly:
         )
         .timeout(const Duration(seconds: 15));
 
-    if (response.statusCode != 200)
+    if (response.statusCode != 200) {
       throw Exception('Groq API error: ${response.statusCode}');
+    }
 
     final data = jsonDecode(response.body);
     final text = data['choices'][0]['message']['content'] as String;

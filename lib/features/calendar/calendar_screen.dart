@@ -174,10 +174,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       ),
                     ),
                   ),
-                  const Icon(
-                    Icons.calendar_month_rounded,
-                    color: AppColors.primary,
-                  ),
                 ],
               ),
             ),
@@ -317,7 +313,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                     color: isToday
                                         ? AppColors.primaryContainer
                                         : isEvent
-                                        ? AppColors.goldLight.withOpacity(0.3)
+                                        ? AppColors.goldLight.withValues(
+                                            alpha: 0.3,
+                                          )
                                         : null,
                                     borderRadius: BorderRadius.circular(8),
                                     border: isToday
@@ -345,7 +343,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                         style: TextStyle(
                                           fontSize: 8,
                                           color: isToday
-                                              ? Colors.white.withOpacity(0.8)
+                                              ? Colors.white.withValues(
+                                                  alpha: 0.8,
+                                                )
                                               : AppColors.onSurfaceVariant,
                                         ),
                                       ),

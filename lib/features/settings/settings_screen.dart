@@ -143,7 +143,7 @@ class SettingsScreen extends ConsumerWidget {
                           : 'Unlock cloud synchronization, exclusive adkar collections, and high-resolution prayer widgets.',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                         height: 1.5,
                       ),
                     ),

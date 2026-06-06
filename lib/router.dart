@@ -15,7 +15,7 @@ import 'features/reflection/reflection_screen.dart';
 import 'core/l10n/app_strings.dart';
 
 final router = GoRouter(
-  initialLocation: '/home',
+  initialLocation: '/splash',
   routes: [
     GoRoute(path: '/splash', builder: (_, _) => const SplashScreen()),
     GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingScreen()),
@@ -85,7 +85,7 @@ class _NurBottomNav extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
         border: Border(
-          top: BorderSide(color: Colors.grey.withOpacity(0.15), width: 1),
+          top: BorderSide(color: Colors.grey.withValues(alpha: 0.15), width: 1),
         ),
       ),
       child: SafeArea(

@@ -53,7 +53,7 @@ class AppTheme {
       margin: EdgeInsets.zero,
     ),
     appBarTheme: AppBarTheme(
-      backgroundColor: AppColors.background.withOpacity(0.9),
+      backgroundColor: AppColors.background.withValues(alpha: 0.9),
       elevation: 0,
       centerTitle: true,
       titleTextStyle: const TextStyle(

@@ -232,7 +232,9 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.goldLight.withOpacity(0.3),
+                                color: AppColors.goldLight.withValues(
+                                  alpha: 0.3,
+                                ),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -404,7 +406,9 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: _saved
                                     ? AppColors.goldLight
-                                    : AppColors.goldLight.withOpacity(0.4),
+                                    : AppColors.goldLight.withValues(
+                                        alpha: 0.4,
+                                      ),
                                 foregroundColor: AppColors.primary,
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 14,

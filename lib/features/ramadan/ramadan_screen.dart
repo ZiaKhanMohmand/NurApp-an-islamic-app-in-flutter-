@@ -129,10 +129,6 @@ class _RamadanScreenState extends State<RamadanScreen> {
                         ),
                       ),
                     ),
-                    const Icon(
-                      Icons.calendar_month_rounded,
-                      color: Colors.white,
-                    ),
                   ],
                 ),
               ),
@@ -162,7 +158,7 @@ class _RamadanScreenState extends State<RamadanScreen> {
                             vertical: 10,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
+                            color: Colors.white.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(30),
                           ),
                           child: Text(
@@ -185,7 +181,9 @@ class _RamadanScreenState extends State<RamadanScreen> {
                             borderRadius: BorderRadius.circular(4),
                             child: LinearProgressIndicator(
                               value: _ramadanDay / 30,
-                              backgroundColor: Colors.white.withOpacity(0.2),
+                              backgroundColor: Colors.white.withValues(
+                                alpha: 0.2,
+                              ),
                               valueColor: const AlwaysStoppedAnimation(
                                 AppColors.gold,
                               ),
@@ -203,7 +201,7 @@ class _RamadanScreenState extends State<RamadanScreen> {
                       '☽',
                       style: TextStyle(
                         fontSize: 80,
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                       ),
                     ),
                   ),
@@ -246,9 +244,11 @@ class _RamadanScreenState extends State<RamadanScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+                    border: Border.all(
+                      color: AppColors.gold.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -327,9 +327,11 @@ class _RamadanScreenState extends State<RamadanScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.08),
+                    color: Colors.white.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.gold.withOpacity(0.2)),
+                    border: Border.all(
+                      color: AppColors.gold.withValues(alpha: 0.2),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -358,10 +360,10 @@ class _RamadanScreenState extends State<RamadanScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.08),
+                          color: Colors.white.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppColors.gold.withOpacity(0.2),
+                            color: AppColors.gold.withValues(alpha: 0.2),
                           ),
                         ),
                         child: Column(
@@ -430,9 +432,9 @@ class _TimeCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -451,7 +453,7 @@ class _TimeCard extends StatelessWidget {
                 CircularProgressIndicator(
                   value: 0.7,
                   strokeWidth: 4,
-                  backgroundColor: Colors.white.withOpacity(0.2),
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
                   valueColor: const AlwaysStoppedAnimation(AppColors.gold),
                 ),
                 Column(

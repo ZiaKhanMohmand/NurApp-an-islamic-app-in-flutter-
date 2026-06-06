@@ -226,7 +226,7 @@ class _PatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.gold.withOpacity(0.06)
+      ..color = AppColors.gold.withValues(alpha: 0.06)
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
     const spacing = 60.0;
@@ -266,7 +266,7 @@ class _Dot extends StatelessWidget {
       height: active ? 8 : 6,
       margin: const EdgeInsets.symmetric(horizontal: 3),
       decoration: BoxDecoration(
-        color: active ? AppColors.gold : AppColors.gold.withOpacity(0.3),
+        color: active ? AppColors.gold : AppColors.gold.withValues(alpha: 0.3),
         shape: BoxShape.circle,
       ),
     );

@@ -228,7 +228,7 @@ class _LastReadCard extends ConsumerWidget {
                     'Ayah ${data['ayah']} • Juz ${data['juz']}',
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                     ),
                   ),
                 ],

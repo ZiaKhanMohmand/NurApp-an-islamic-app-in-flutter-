@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/theme/app_colors.dart';
+import 'package:geolocator/geolocator.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -42,10 +43,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Future<void> _handleButton() async {
     if (_currentPage == 0) {
-      await Permission.location.request();
+      await Geolocator.requestPermission();
     } else if (_currentPage == 1) {
       await Permission.notification.request();
     }
+
+    if (!mounted) return;
 
     if (_currentPage < _pages.length - 1) {
       _pageController.nextPage(
@@ -244,7 +247,7 @@ class _PatternPainter2 extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.primary.withOpacity(0.05)
+      ..color = AppColors.primary.withValues(alpha: 0.05)
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
     const spacing = 70.0;
