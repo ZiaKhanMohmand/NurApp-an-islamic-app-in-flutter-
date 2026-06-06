@@ -24,6 +24,7 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen>
   bool _hasPermission = false;
   bool _aligned = false;
 
+  // Smoothing
   final List<double> _headingBuffer = [];
   static const int _bufferSize = 5;
 
@@ -77,12 +78,13 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen>
       FlutterCompass.events?.listen((event) {
         if (!mounted || event.heading == null) return;
 
+        // Smooth heading with circular mean
         _headingBuffer.add(event.heading!);
         if (_headingBuffer.length > _bufferSize) _headingBuffer.removeAt(0);
         final smoothed = _circularMean(_headingBuffer);
 
         final diff = ((_qiblaAngle - smoothed) % 360 + 360) % 360;
-        final isAligned = diff < 10 || diff > 350;
+        final isAligned = diff < 5 || diff > 355;
 
         if (isAligned && !_aligned) _glowController?.forward(from: 0);
 
@@ -101,6 +103,7 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen>
     }
   }
 
+  /// Circular mean for smooth compass averaging (handles 359°→1° wrapping)
   double _circularMean(List<double> angles) {
     double sinSum = 0, cosSum = 0;
     for (final a in angles) {
@@ -139,54 +142,40 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen>
     return r * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
   }
 
-  String _getDirectionHint() {
-    if (_compassHeading == null) return 'CALIBRATING...';
-    final diff = ((_qiblaAngle - _compassHeading!) % 360 + 360) % 360;
-    if (diff < 10 || diff > 350) return '✦  FACING QIBLA';
-    if (diff < 180) return 'TURN RIGHT ▶  ${diff.toStringAsFixed(0)}°';
-    return 'TURN LEFT ◀  ${(360 - diff).toStringAsFixed(0)}°';
-  }
-
-  String _getCardinalDirection() {
-    // Cardinal direction of Qibla from user's location
-    final a = _qiblaAngle;
-    if (a >= 337.5 || a < 22.5) return 'NORTH';
-    if (a < 67.5) return 'NORTH-EAST';
-    if (a < 112.5) return 'EAST';
-    if (a < 157.5) return 'SOUTH-EAST';
-    if (a < 202.5) return 'SOUTH';
-    if (a < 247.5) return 'SOUTH-WEST';
-    if (a < 292.5) return 'WEST';
-    return 'NORTH-WEST';
-  }
-
   @override
   Widget build(BuildContext context) {
     final strings = ref.watch(stringsProvider);
 
-    double markerTurns = 0;
+    // ACCURATE rotation: needle = qibla direction relative to phone orientation
+    // compassHeading = where North is on screen
+    // needleAngle = rotate compass so qibla points up
+    double needleTurns = 0;
     if (_compassHeading != null) {
-      markerTurns = (_qiblaAngle - _compassHeading!) / 360.0;
+      // Rotate entire compass face: north is at -heading, so qibla is at (qibla - heading)
+      needleTurns = (_qiblaAngle - _compassHeading!) / 360.0;
     } else {
-      markerTurns = _qiblaAngle / 360.0;
+      needleTurns = _qiblaAngle / 360.0;
     }
 
     return Scaffold(
       backgroundColor: const Color(0xFF010D07),
       body: Stack(
         children: [
+          // Deep space background
           Positioned.fill(child: CustomPaint(painter: _StarFieldPainter())),
+
           SafeArea(
             child: Column(
               children: [
+                // AppBar
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
                     vertical: 14,
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Expanded(
+                      const Expanded(
                         child: Text(
                           'NurApp',
                           textAlign: TextAlign.center,
@@ -202,24 +191,12 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen>
                   ),
                 ),
 
-                // Direction hint badge
-                _buildStatusBadge(),
-
-                const SizedBox(height: 8),
-
-                // Qibla direction label
-                Text(
-                  'QIBLA DIRECTION: ${_getCardinalDirection()}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.gold,
-                    letterSpacing: 1.5,
-                  ),
-                ),
+                // Status badge
+                _buildStatusBadge(strings),
 
                 const SizedBox(height: 16),
 
+                // Compass
                 Expanded(
                   child: Center(
                     child: AnimatedBuilder(
@@ -227,11 +204,12 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen>
                         _pulseController ?? const AlwaysStoppedAnimation(0),
                         _glowController ?? const AlwaysStoppedAnimation(0),
                       ]),
-                      builder: (_, __) => _buildCompass(markerTurns),
+                      builder: (_, __) => _buildCompass(needleTurns),
                     ),
                   ),
                 ),
 
+                // Distance + info
                 _buildInfoPanel(strings),
                 const SizedBox(height: 24),
               ],
@@ -242,7 +220,7 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen>
     );
   }
 
-  Widget _buildStatusBadge() {
+  Widget _buildStatusBadge(AppStrings strings) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -286,7 +264,11 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen>
           ),
           const SizedBox(width: 10),
           Text(
-            _hasPermission ? _getDirectionHint() : 'PERMISSION NEEDED',
+            _aligned
+                ? '✦  FACING QIBLA'
+                : _hasPermission
+                ? 'H:${_compassHeading?.toStringAsFixed(0) ?? "?"} Q:${_qiblaAngle.toStringAsFixed(0)}'
+                : 'PERMISSION NEEDED',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -299,7 +281,7 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen>
     );
   }
 
-  Widget _buildCompass(double markerTurns) {
+  Widget _buildCompass(double needleTurns) {
     final glowOpacity = _aligned
         ? (0.3 + (_glowController?.value ?? 0) * 0.4)
         : 0.0;
@@ -307,6 +289,7 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen>
     return Stack(
       alignment: Alignment.center,
       children: [
+        // Outer glow when aligned
         if (_aligned)
           Container(
             width: 320,
@@ -323,59 +306,41 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen>
             ),
           ),
 
+        // Geometric ring decoration
         CustomPaint(
           size: const Size(310, 310),
           painter: _GeometricRingPainter(),
         ),
 
-        // Compass face — STATIC
-        CustomPaint(size: const Size(260, 260), painter: _CompassFacePainter()),
-
-        // Kaaba marker — rotates to point at Qibla
+        // Main compass face — rotates with heading
         AnimatedRotation(
-          turns: markerTurns,
+          turns: needleTurns,
           duration: const Duration(milliseconds: 150),
           curve: Curves.easeOut,
-          child: SizedBox(
-            width: 260,
-            height: 260,
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _aligned
-                          ? AppColors.gold
-                          : AppColors.gold.withValues(alpha: 0.8),
-                      borderRadius: BorderRadius.circular(6),
-                      boxShadow: _aligned
-                          ? [
-                              BoxShadow(
-                                color: AppColors.gold.withValues(alpha: 0.6),
-                                blurRadius: 12,
-                                spreadRadius: 2,
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: const Text('🕋', style: TextStyle(fontSize: 14)),
-                  ),
-                  Container(
-                    width: 2,
-                    height: 20,
-                    color: _aligned
-                        ? AppColors.gold
-                        : AppColors.gold.withValues(alpha: 0.8),
-                  ),
-                ],
+          child: CustomPaint(
+            size: const Size(260, 260),
+            painter: _CompassFacePainter(),
+          ),
+        ),
+
+        // Fixed Kaaba marker at top (always points up = qibla direction)
+        Positioned(
+          top: 10,
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.gold,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text('🕋', style: TextStyle(fontSize: 14)),
               ),
-            ),
+              Container(width: 2, height: 20, color: AppColors.gold),
+            ],
           ),
         ),
 
@@ -477,12 +442,14 @@ class _InfoItem extends StatelessWidget {
   }
 }
 
+// Beautiful compass face with N/S/E/W, degree marks
 class _CompassFacePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final r = size.width / 2;
 
+    // Background circle
     canvas.drawCircle(
       center,
       r,
@@ -491,6 +458,7 @@ class _CompassFacePainter extends CustomPainter {
         ..style = PaintingStyle.fill,
     );
 
+    // Subtle gradient overlay
     canvas.drawCircle(
       center,
       r,
@@ -501,9 +469,11 @@ class _CompassFacePainter extends CustomPainter {
         ..style = PaintingStyle.fill,
     );
 
+    // Degree tick marks
     final tickPaint = Paint()
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
+
     for (int i = 0; i < 360; i += 5) {
       final angle = i * math.pi / 180;
       final isMajor = i % 90 == 0;
@@ -519,6 +489,7 @@ class _CompassFacePainter extends CustomPainter {
           ? Colors.white54
           : Colors.white24;
       tickPaint.strokeWidth = isMajor ? 2 : 1;
+
       canvas.drawLine(
         Offset(
           center.dx + (r - tickLen) * math.sin(angle),
@@ -532,6 +503,7 @@ class _CompassFacePainter extends CustomPainter {
       );
     }
 
+    // N S E W labels
     final dirs = {'N': 0.0, 'E': 90.0, 'S': 180.0, 'W': 270.0};
     for (final entry in dirs.entries) {
       final angle = entry.value * math.pi / 180;
@@ -539,6 +511,7 @@ class _CompassFacePainter extends CustomPainter {
       final x = center.dx + labelR * math.sin(angle);
       final y = center.dy - labelR * math.cos(angle);
       final isNorth = entry.key == 'N';
+
       final tp = TextPainter(
         text: TextSpan(
           text: entry.key,
@@ -553,6 +526,7 @@ class _CompassFacePainter extends CustomPainter {
       tp.paint(canvas, Offset(x - tp.width / 2, y - tp.height / 2));
     }
 
+    // Inner circle border
     canvas.drawCircle(
       center,
       r - 2,
@@ -567,20 +541,20 @@ class _CompassFacePainter extends CustomPainter {
   bool shouldRepaint(_) => false;
 }
 
+// Geometric outer ring — Islamic pattern inspired
 class _GeometricRingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final r = size.width / 2;
 
-    canvas.drawCircle(
-      center,
-      r,
-      Paint()
-        ..color = AppColors.gold.withValues(alpha: 0.15)
-        ..strokeWidth = 1
-        ..style = PaintingStyle.stroke,
-    );
+    final paint = Paint()
+      ..color = AppColors.gold.withValues(alpha: 0.15)
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke;
+
+    // Outer ring
+    canvas.drawCircle(center, r, paint);
     canvas.drawCircle(
       center,
       r - 8,
@@ -590,6 +564,7 @@ class _GeometricRingPainter extends CustomPainter {
         ..style = PaintingStyle.stroke,
     );
 
+    // 8-pointed star segments
     final starPaint = Paint()
       ..color = AppColors.gold.withValues(alpha: 0.2)
       ..strokeWidth = 1.5
@@ -610,6 +585,7 @@ class _GeometricRingPainter extends CustomPainter {
       );
     }
 
+    // Diamond markers at cardinal points
     for (int i = 0; i < 4; i++) {
       final angle = i * math.pi / 2 - math.pi / 2;
       final cx = center.dx + (r + 4) * math.cos(angle);
@@ -633,20 +609,23 @@ class _GeometricRingPainter extends CustomPainter {
   bool shouldRepaint(_) => false;
 }
 
+// Starfield background
 class _StarFieldPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final rng = math.Random(42);
     final paint = Paint()..style = PaintingStyle.fill;
+
     for (int i = 0; i < 80; i++) {
       final x = rng.nextDouble() * size.width;
       final y = rng.nextDouble() * size.height;
       final r = rng.nextDouble() * 1.5;
-      paint.color = Colors.white.withValues(
-        alpha: 0.1 + rng.nextDouble() * 0.3,
-      );
+      final opacity = 0.1 + rng.nextDouble() * 0.3;
+      paint.color = Colors.white.withValues(alpha: opacity);
       canvas.drawCircle(Offset(x, y), r, paint);
     }
+
+    // Subtle green vignette
     canvas.drawRect(
       Offset.zero & size,
       Paint()
