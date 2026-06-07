@@ -64,6 +64,8 @@ class AppStrings {
   String get verses => isArabic ? 'آيات' : 'VERSES';
   String get jumpToAyah =>
       isArabic ? 'انتقل إلى رقم الآية...' : 'Jump to Ayah number...';
+  String get ayah => isArabic ? 'آية' : 'Ayah';
+  String get juz => isArabic ? 'جزء' : 'Juz';
 
   // Reflection
   String get dailyGuidance => isArabic ? 'الإرشاد اليومي' : 'DAILY GUIDANCE';
@@ -137,7 +139,6 @@ class AppStrings {
   String get eidAlFitr => isArabic ? 'عيد الفطر السعيد' : 'Eid Al-Fitr';
   String get eidAlAdha => isArabic ? 'عيد الأضحى المبارك' : 'Eid Al-Adha';
 
-  //Names of Allah 99:
   //Names of Allah 99:
   String get asmaUlHusna => isArabic ? 'أسماء الله الحسنى' : 'Asma ul Husna';
   String get namesOfAllah => isArabic ? '٩٩ اسماً لله' : '99 Names of Allah';

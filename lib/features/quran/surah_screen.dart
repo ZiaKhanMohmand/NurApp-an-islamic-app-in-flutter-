@@ -42,9 +42,8 @@ class _SurahScreenState extends ConsumerState<SurahScreen> {
     }
     _ayahController.clear();
     FocusScope.of(context).unfocus();
-
     _itemScrollController.scrollTo(
-      index: num - 1, // 0-based
+      index: num - 1,
       duration: const Duration(milliseconds: 500),
       curve: Curves.easeInOut,
     );
@@ -66,10 +65,16 @@ class _SurahScreenState extends ConsumerState<SurahScreen> {
     final surahs = results[1] as List<Surah>;
     final surah = surahs.firstWhere((su) => su.number == widget.number);
 
+    // get saved ayah BEFORE overwriting lastRead
+    final lastRead = await QuranService.getLastRead();
+    final savedAyah = (lastRead != null && lastRead['surah'] == widget.number)
+        ? (lastRead['ayah'] as int)
+        : 1;
+
     await QuranService.saveLastRead(
       widget.number,
       s.isArabic ? surah.name : surah.englishName,
-      1,
+      savedAyah,
       1,
     );
 
@@ -80,10 +85,15 @@ class _SurahScreenState extends ConsumerState<SurahScreen> {
       _loading = false;
     });
 
-    setState(() {
-      _ayahs = ayahs;
-      _surah = surah;
-      _loading = false;
+    // scroll to saved ayah after build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (savedAyah > 1) {
+        _itemScrollController.scrollTo(
+          index: savedAyah - 1,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOut,
+        );
+      }
     });
   }
 
@@ -121,7 +131,6 @@ class _SurahScreenState extends ConsumerState<SurahScreen> {
                       ),
                     ),
                   ),
-                  // Font size controls
                   IconButton(
                     icon: const Icon(
                       Icons.text_decrease_rounded,
@@ -145,6 +154,8 @@ class _SurahScreenState extends ConsumerState<SurahScreen> {
                 ],
               ),
             ),
+
+            // Jump to ayah
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: Row(
@@ -213,17 +224,25 @@ class _SurahScreenState extends ConsumerState<SurahScreen> {
                   itemCount: _ayahs.length,
                   itemBuilder: (_, i) => _AyahCard(
                     ayah: _ayahs[i],
-
                     fontSize: _fontSize,
-
                     bookmarked: _bookmarked.contains(_ayahs[i].number),
-                    onBookmark: () => setState(() {
-                      if (_bookmarked.contains(_ayahs[i].number)) {
-                        _bookmarked.remove(_ayahs[i].number);
-                      } else {
-                        _bookmarked.add(_ayahs[i].number);
-                      }
-                    }),
+                    onBookmark: () {
+                      final ayahNum = _ayahs[i].number;
+                      final s = ref.read(stringsProvider);
+                      setState(() {
+                        if (_bookmarked.contains(ayahNum)) {
+                          _bookmarked.remove(ayahNum);
+                        } else {
+                          _bookmarked.add(ayahNum);
+                          QuranService.saveLastRead(
+                            widget.number,
+                            s.isArabic ? _surah!.name : _surah!.englishName,
+                            ayahNum,
+                            1,
+                          );
+                        }
+                      });
+                    },
                     onCopy: () {
                       Clipboard.setData(
                         ClipboardData(
@@ -275,11 +294,9 @@ class _AyahCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // Verse number + actions row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Actions
               Row(
                 children: [
                   GestureDetector(
@@ -305,7 +322,6 @@ class _AyahCard extends ConsumerWidget {
                   ),
                 ],
               ),
-              // Verse number badge
               Container(
                 width: 32,
                 height: 32,
@@ -328,7 +344,6 @@ class _AyahCard extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
 
-          // Arabic text (RTL)
           Directionality(
             textDirection: TextDirection.rtl,
             child: Align(
@@ -346,7 +361,6 @@ class _AyahCard extends ConsumerWidget {
           ),
           const Divider(height: 20, color: AppColors.surfaceVariant),
 
-          // Translation (LTR)
           Directionality(
             textDirection: TextDirection.ltr,
             child: Align(

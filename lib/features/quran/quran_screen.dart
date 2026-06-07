@@ -225,7 +225,7 @@ class _LastReadCard extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Ayah ${data['ayah']} • Juz ${data['juz']}',
+                    '${s.ayah} ${s.toLocalNum(data['ayah'].toString())} • ${s.juz} ${s.toLocalNum(data['juz'].toString())}',
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.white.withValues(alpha: 0.7),
