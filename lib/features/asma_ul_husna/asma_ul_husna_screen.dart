@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:nur_app/core/l10n/app_strings.dart';
 
 class AsmaUlHusnaScreen extends ConsumerStatefulWidget {
@@ -18,13 +19,41 @@ class _AsmaUlHusnaScreenState extends ConsumerState<AsmaUlHusnaScreen> {
   final _searchController = TextEditingController();
   bool _loading = true;
 
+  final AudioPlayer _player = AudioPlayer();
+  bool _isPlaying = false;
+  bool _audioLoading = false;
+  Duration _position = Duration.zero;
+  Duration _duration = Duration.zero;
+
   static const _gold = Color(0xFFC9A84C);
+  static const _audioUrl =
+      'https://www.quranclick.com/Downloads/Duain/Allah-names.mp3';
 
   @override
   void initState() {
     super.initState();
     _loadNames();
     _searchController.addListener(_onSearch);
+
+    _player.playerStateStream.listen((state) {
+      if (!mounted) return;
+      setState(() {
+        _isPlaying = state.playing;
+        _audioLoading =
+            state.processingState == ProcessingState.loading ||
+            state.processingState == ProcessingState.buffering;
+      });
+    });
+
+    _player.positionStream.listen((pos) {
+      if (!mounted) return;
+      setState(() => _position = pos);
+    });
+
+    _player.durationStream.listen((dur) {
+      if (!mounted) return;
+      setState(() => _duration = dur ?? Duration.zero);
+    });
   }
 
   Future<void> _loadNames() async {
@@ -52,8 +81,42 @@ class _AsmaUlHusnaScreenState extends ConsumerState<AsmaUlHusnaScreen> {
     });
   }
 
+  Future<void> _toggleAudio() async {
+    try {
+      if (_isPlaying) {
+        await _player.pause();
+      } else {
+        if (_player.processingState == ProcessingState.idle) {
+          await _player.setUrl(_audioUrl);
+        }
+        await _player.play();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not load audio. Check internet connection.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _seek(double value) async {
+    final pos = Duration(milliseconds: value.toInt());
+    await _player.seek(pos);
+  }
+
+  String _formatDuration(Duration d) {
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
   @override
   void dispose() {
+    _player.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -70,13 +133,19 @@ class _AsmaUlHusnaScreenState extends ConsumerState<AsmaUlHusnaScreen> {
         ? const Color(0xFF8A9E93)
         : const Color(0xFF717973);
 
+    final showPlayer =
+        _isPlaying ||
+        _audioLoading ||
+        _player.processingState == ProcessingState.ready;
+
     return Scaffold(
+      backgroundColor: bg,
       appBar: AppBar(
         backgroundColor: bg,
         elevation: 0,
         toolbarHeight: 80,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: _gold),
+          icon: const Icon(Icons.arrow_back, color: _gold),
           onPressed: () {
             if (context.canPop()) {
               context.pop();
@@ -90,7 +159,7 @@ class _AsmaUlHusnaScreenState extends ConsumerState<AsmaUlHusnaScreen> {
           children: [
             Text(
               s.asmaUlHusna,
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: 'Amiri',
                 fontSize: 25,
                 color: _gold,
@@ -109,12 +178,23 @@ class _AsmaUlHusnaScreenState extends ConsumerState<AsmaUlHusnaScreen> {
         ),
       ),
 
+      // Mini Player at bottom
+      bottomNavigationBar: _MiniPlayer(
+        isPlaying: _isPlaying,
+        isLoading: _audioLoading,
+        position: _position,
+        duration: _duration,
+        onToggle: _toggleAudio,
+        onSeek: _seek,
+        formatDuration: _formatDuration,
+        isDark: isDark,
+        isArabic: isArabic,
+      ),
+
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: _gold))
           : CustomScrollView(
               slivers: [
-                // App Bar
-
                 // Search bar
                 SliverToBoxAdapter(
                   child: Padding(
@@ -163,7 +243,7 @@ class _AsmaUlHusnaScreenState extends ConsumerState<AsmaUlHusnaScreen> {
 
                 // Grid
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   sliver: SliverGrid(
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
@@ -191,6 +271,203 @@ class _AsmaUlHusnaScreenState extends ConsumerState<AsmaUlHusnaScreen> {
   }
 }
 
+// ── Mini Player Widget ──────────────────────────────────────────────────────
+
+class _MiniPlayer extends StatelessWidget {
+  final bool isPlaying, isLoading, isDark, isArabic;
+  final Duration position, duration;
+  final VoidCallback onToggle;
+  final ValueChanged<double> onSeek;
+  final String Function(Duration) formatDuration;
+
+  const _MiniPlayer({
+    required this.isPlaying,
+    required this.isLoading,
+    required this.position,
+    required this.duration,
+    required this.onToggle,
+    required this.onSeek,
+    required this.formatDuration,
+    required this.isDark,
+    required this.isArabic,
+  });
+
+  static const _gold = Color(0xFFC9A84C);
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = isDark ? const Color(0xFF1A211C) : Colors.white;
+    final textSecondary = isDark
+        ? const Color(0xFF8A9E93)
+        : const Color(0xFF717973);
+    final progress = duration.inMilliseconds > 0
+        ? position.inMilliseconds / duration.inMilliseconds
+        : 0.0;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        border: Border(
+          top: BorderSide(color: _gold.withValues(alpha: 0.2), width: 1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Label + controls row
+              Row(
+                children: [
+                  // Icon
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: _gold.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Text(
+                      '٩٩',
+                      style: TextStyle(
+                        color: _gold,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Title + subtitle
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isArabic ? 'أسماء الله الحسنى' : 'Asma ul Husna',
+                          style: TextStyle(
+                            fontFamily: isArabic ? 'Amiri' : null,
+                            fontSize: isArabic ? 15 : 13,
+                            fontWeight: FontWeight.w700,
+                            color: _gold,
+                          ),
+                        ),
+                        Text(
+                          isArabic ? 'تلاوة كاملة' : 'Full Recitation',
+                          style: TextStyle(fontSize: 11, color: textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Play/Pause button
+                  GestureDetector(
+                    onTap: onToggle,
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: _gold,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _gold.withValues(alpha: 0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Icon(
+                              isPlaying
+                                  ? Icons.pause_rounded
+                                  : Icons.play_arrow_rounded,
+                              color: Colors.white,
+                              size: 26,
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              // Progress bar
+              Column(
+                children: [
+                  SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 3,
+                      thumbShape: const RoundSliderThumbShape(
+                        enabledThumbRadius: 6,
+                      ),
+                      overlayShape: const RoundSliderOverlayShape(
+                        overlayRadius: 14,
+                      ),
+                      activeTrackColor: _gold,
+                      inactiveTrackColor: _gold.withValues(alpha: 0.15),
+                      thumbColor: _gold,
+                      overlayColor: _gold.withValues(alpha: 0.15),
+                    ),
+                    child: Slider(
+                      value: position.inMilliseconds.toDouble().clamp(
+                        0,
+                        duration.inMilliseconds.toDouble(),
+                      ),
+                      min: 0,
+                      max: duration.inMilliseconds > 0
+                          ? duration.inMilliseconds.toDouble()
+                          : 1,
+                      onChanged: onSeek,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          formatDuration(position),
+                          style: TextStyle(fontSize: 10, color: textSecondary),
+                        ),
+                        Text(
+                          formatDuration(duration),
+                          style: TextStyle(fontSize: 10, color: textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Name Card ───────────────────────────────────────────────────────────────
+
 class _NameCard extends StatelessWidget {
   final Map<String, dynamic> name;
   final Color cardBg, textPrimary, textSecondary;
@@ -211,7 +488,7 @@ class _NameCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => _showDetail(context, s),
+      onTap: () => _showDetail(context),
       child: Container(
         decoration: BoxDecoration(
           color: cardBg,
@@ -229,7 +506,6 @@ class _NameCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Number badge
             Container(
               width: 28,
               height: 28,
@@ -247,10 +523,7 @@ class _NameCard extends StatelessWidget {
                 ),
               ),
             ),
-
             const Spacer(),
-
-            // Arabic name
             Align(
               alignment: Alignment.centerRight,
               child: Text(
@@ -265,10 +538,7 @@ class _NameCard extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(height: 8),
-
-            // Transliteration
             Text(
               name['transliteration'],
               style: TextStyle(
@@ -277,10 +547,7 @@ class _NameCard extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-
             const SizedBox(height: 2),
-
-            // Meaning
             Text(
               name['meaning'],
               style: TextStyle(color: textSecondary, fontSize: 11, height: 1.3),
@@ -293,7 +560,7 @@ class _NameCard extends StatelessWidget {
     );
   }
 
-  void _showDetail(BuildContext context, AppStrings s) {
+  void _showDetail(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF1A211C) : Colors.white;
     final textPrimary = isDark ? Colors.white : const Color(0xFF1A1A1A);
@@ -312,7 +579,6 @@ class _NameCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Handle
             Container(
               width: 40,
               height: 4,
@@ -322,15 +588,11 @@ class _NameCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-
-            // Number
             Text(
               '${s.toLocalNum('${name['number']}')} ${s.ofNinetyNine}',
               style: TextStyle(color: textSecondary, fontSize: 13),
             ),
             const SizedBox(height: 12),
-
-            // Arabic large
             Text(
               name['arabic'],
               textDirection: TextDirection.rtl,
@@ -343,12 +605,8 @@ class _NameCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Divider
             Container(height: 1, color: _gold.withValues(alpha: 0.15)),
             const SizedBox(height: 16),
-
-            // Transliteration
             Text(
               name['transliteration'],
               style: TextStyle(
@@ -358,8 +616,6 @@ class _NameCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-
-            // Meaning
             Text(
               name['meaning'],
               style: TextStyle(color: textSecondary, fontSize: 16, height: 1.5),
