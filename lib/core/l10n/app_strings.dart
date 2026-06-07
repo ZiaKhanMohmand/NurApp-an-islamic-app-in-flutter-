@@ -17,7 +17,7 @@ class AppStrings {
   }
 
   // General
-  String get appName => 'NurApp';
+  String get appName => isArabic ? 'نور' : 'NurApp';
   String get home => isArabic ? 'الرئيسية' : 'Home';
   String get quran => isArabic ? 'القرآن' : 'Quran';
   String get tasbeeh => isArabic ? 'التسبيح' : 'Tasbeeh';
@@ -81,6 +81,9 @@ class AppStrings {
 
   // Ramadan
   String get ramadanKareem => isArabic ? 'رمضان كريم' : 'Ramadan Kareem';
+  String get notRamadanYet => isArabic
+      ? 'ليس رمضان بعد. يرجى العودة في أول يوم من رمضان.'
+      : 'It\'s not Ramadan yet. Please check back on the first day of Ramadan.';
   String get nextSuhoor => isArabic ? 'السحور القادم' : 'Next Suhoor';
   String get todayIftar => isArabic ? 'إفطار اليوم' : 'Today\'s Iftar';
   String get duaForIftar => isArabic ? 'دعاء الإفطار' : 'Dua for Iftar';
@@ -133,6 +136,15 @@ class AppStrings {
   String get ramadanBegins => isArabic ? 'بداية شهر رمضان' : 'Ramadan Begins';
   String get eidAlFitr => isArabic ? 'عيد الفطر السعيد' : 'Eid Al-Fitr';
   String get eidAlAdha => isArabic ? 'عيد الأضحى المبارك' : 'Eid Al-Adha';
+
+  //Names of Allah 99:
+  //Names of Allah 99:
+  String get asmaUlHusna => isArabic ? 'أسماء الله الحسنى' : 'Asma ul Husna';
+  String get namesOfAllah => isArabic ? '٩٩ اسماً لله' : '99 Names of Allah';
+  String get searchAsma =>
+      isArabic ? 'ابحث بالاسم أو المعنى...' : 'Search by name or meaning…';
+  String get ofNinetyNine => isArabic ? 'من ٩٩' : 'of 99';
+  String get namesCount => isArabic ? 'اسم' : 'names';
 
   // Gregorian Months Short
   String shortMonth(int m) {

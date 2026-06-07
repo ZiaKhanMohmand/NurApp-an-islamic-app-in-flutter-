@@ -67,8 +67,9 @@ class PrayerService {
     );
 
     final response = await http.get(url).timeout(const Duration(seconds: 10));
-    if (response.statusCode != 200)
+    if (response.statusCode != 200) {
       throw Exception('API error ${response.statusCode}');
+    }
 
     final data = jsonDecode(response.body);
     if (data['code'] != 200) throw Exception('API returned error');

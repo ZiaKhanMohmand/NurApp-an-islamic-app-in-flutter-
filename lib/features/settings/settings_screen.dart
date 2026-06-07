@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/providers/settings_provider.dart';
+import '../asma_ul_husna/asma_ul_husna_screen.dart';
+import 'package:go_router/go_router.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -115,6 +117,16 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 onTap: null,
               ),
+
+              const SizedBox(height: 10),
+
+              _MoreCard(
+                icon: Icons.auto_awesome_rounded,
+                label: '99 Names of Allah',
+                subtitle: 'Asma ul Husna',
+                onTap: () => context.go('/asma'),
+              ),
+
               const SizedBox(height: 24),
 
               // Premium card
@@ -381,6 +393,75 @@ class _LangButton extends StatelessWidget {
             fontWeight: FontWeight.w700,
             color: selected ? Colors.white : AppColors.onSurfaceVariant,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MoreCard extends StatelessWidget {
+  final IconData icon;
+  final String label, subtitle;
+  final VoidCallback onTap;
+
+  const _MoreCard({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.surfaceVariant),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainer,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: AppColors.primary, size: 20),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.onSurface,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.onSurfaceVariant,
+            ),
+          ],
         ),
       ),
     );

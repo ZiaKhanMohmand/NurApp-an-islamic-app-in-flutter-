@@ -1,17 +1,20 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hijri/hijri_calendar.dart';
+import 'package:nur_app/core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../home/prayer_service.dart';
 import 'package:geolocator/geolocator.dart';
 
-class RamadanScreen extends StatefulWidget {
+class RamadanScreen extends ConsumerStatefulWidget {
   const RamadanScreen({super.key});
   @override
-  State<RamadanScreen> createState() => _RamadanScreenState();
+  ConsumerState<RamadanScreen> createState() => _RamadanScreenState();
 }
 
-class _RamadanScreenState extends State<RamadanScreen> {
+class _RamadanScreenState extends ConsumerState<RamadanScreen> {
   String _suhoorTime = '--:--';
   String _iftarTime = '--:--';
   String _suhoorCountdown = '--:--:--';
@@ -103,6 +106,20 @@ class _RamadanScreenState extends State<RamadanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(stringsProvider);
+
+    // if (!_isRamadan) {
+    //   return Scaffold(
+    //     backgroundColor: AppColors.primaryContainer,
+    //     body: Center(
+    //       child: Text(
+    //         'It\'s not Ramadan yet. Please check back on the first day of Ramadan.',
+    //         textAlign: TextAlign.center,
+    //         style: const TextStyle(fontSize: 16, color: Colors.white70),
+    //       ),
+    //     ),
+    //   );
+    // }
     return Scaffold(
       backgroundColor: AppColors.primaryContainer,
       body: SafeArea(
@@ -117,12 +134,16 @@ class _RamadanScreenState extends State<RamadanScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.menu_rounded, color: Colors.white),
-                    const Expanded(
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, size: 18),
+                      color: Colors.white,
+                      onPressed: () => context.go('/home'),
+                    ),
+                    Expanded(
                       child: Text(
-                        'NurApp',
+                        s.appName,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -141,9 +162,9 @@ class _RamadanScreenState extends State<RamadanScreen> {
                     padding: const EdgeInsets.all(24),
                     child: Column(
                       children: [
-                        const Text(
-                          'Ramadan Kareem',
-                          style: TextStyle(
+                        Text(
+                          s.ramadanKareem,
+                          style: const TextStyle(
                             fontSize: 22,
                             color: AppColors.gold,
                             fontWeight: FontWeight.w600,
@@ -164,7 +185,7 @@ class _RamadanScreenState extends State<RamadanScreen> {
                           child: Text(
                             _isRamadan
                                 ? 'DAY $_ramadanDay OF 30'
-                                : 'NOT RAMADAN YET',
+                                : s.notRamadanYet,
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
@@ -215,7 +236,7 @@ class _RamadanScreenState extends State<RamadanScreen> {
                   children: [
                     Expanded(
                       child: _TimeCard(
-                        label: 'Next Suhoor',
+                        label: s.nextSuhoor,
                         time: _suhoorTime,
                         countdown: _suhoorCountdown,
                         isSoon: _isSoon(_suhoorCountdown),
@@ -225,7 +246,7 @@ class _RamadanScreenState extends State<RamadanScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _TimeCard(
-                        label: 'Today\'s Iftar',
+                        label: s.todayIftar,
                         time: _iftarTime,
                         countdown: _iftarCountdown,
                         isSoon: _isSoon(_iftarCountdown),
@@ -264,9 +285,9 @@ class _RamadanScreenState extends State<RamadanScreen> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          const Text(
-                            'Dua for Iftar',
-                            style: TextStyle(
+                          Text(
+                            s.duaForIftar,
+                            style: const TextStyle(
                               fontSize: 14,
                               color: AppColors.gold,
                               fontWeight: FontWeight.w600,

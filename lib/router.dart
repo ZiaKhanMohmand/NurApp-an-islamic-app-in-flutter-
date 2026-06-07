@@ -13,6 +13,7 @@ import 'features/calendar/calendar_screen.dart';
 import 'features/ramadan/ramadan_screen.dart';
 import 'features/reflection/reflection_screen.dart';
 import 'core/l10n/app_strings.dart';
+import 'features/asma_ul_husna/asma_ul_husna_screen.dart';
 
 final router = GoRouter(
   initialLocation: '/splash',
@@ -22,6 +23,7 @@ final router = GoRouter(
     GoRoute(path: '/calendar', builder: (_, _) => const CalendarScreen()),
     GoRoute(path: '/ramadan', builder: (_, _) => const RamadanScreen()),
     GoRoute(path: '/reflection', builder: (_, _) => const ReflectionScreen()),
+    GoRoute(path: '/asma', builder: (_, _) => const AsmaUlHusnaScreen()),
     GoRoute(
       path: '/surah/:number',
       builder: (_, state) =>

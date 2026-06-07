@@ -204,7 +204,7 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen>
                         _pulseController ?? const AlwaysStoppedAnimation(0),
                         _glowController ?? const AlwaysStoppedAnimation(0),
                       ]),
-                      builder: (_, __) => _buildCompass(needleTurns),
+                      builder: (_, _) => _buildCompass(needleTurns),
                     ),
                   ),
                 ),
@@ -239,7 +239,7 @@ class _QiblaScreenState extends ConsumerState<QiblaScreen>
         children: [
           AnimatedBuilder(
             animation: _pulseController ?? const AlwaysStoppedAnimation(0),
-            builder: (_, __) => Container(
+            builder: (_, _) => Container(
               width: 8,
               height: 8,
               decoration: BoxDecoration(

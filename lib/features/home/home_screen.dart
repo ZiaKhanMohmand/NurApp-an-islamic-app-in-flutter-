@@ -159,6 +159,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             const SizedBox(height: 20),
                             _buildPrayerTimesRow(prayers, s),
                             const SizedBox(height: 16),
+                            _buildAsmaCard(context, s),
+                            const SizedBox(height: 16),
                             _buildQiblaRamadanRow(context, s),
                             const SizedBox(height: 16),
                             _buildVerseCard(
@@ -452,6 +454,70 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildAsmaCard(BuildContext context, AppStrings s) {
+    return GestureDetector(
+      onTap: () => context.push('/asma'),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.surfaceVariant),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.primaryContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              alignment: Alignment.center,
+              child: const Text(
+                '٩٩',
+                style: TextStyle(
+                  color: AppColors.gold,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    s.asmaUlHusna,
+                    style: TextStyle(
+                      fontFamily: 'Amiri',
+                      fontSize: 16,
+                      color: AppColors.gold,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    s.namesOfAllah,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.onSurfaceVariant,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
