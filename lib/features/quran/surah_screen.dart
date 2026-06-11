@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nur_app/core/l10n/app_strings.dart';
+import 'package:nur_app/features/quran/quran_timing_service.dart';
 import '../../core/theme/app_colors.dart';
 import 'quran_service.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:just_audio/just_audio.dart';
 
 class SurahScreen extends ConsumerStatefulWidget {
   final int number;
@@ -224,6 +226,7 @@ class _SurahScreenState extends ConsumerState<SurahScreen> {
                   itemCount: _ayahs.length,
                   itemBuilder: (_, i) => _AyahCard(
                     ayah: _ayahs[i],
+                    surahNumber: widget.number,
                     fontSize: _fontSize,
                     bookmarked: _bookmarked.contains(_ayahs[i].number),
                     onBookmark: () {
@@ -265,12 +268,14 @@ class _SurahScreenState extends ConsumerState<SurahScreen> {
 
 class _AyahCard extends ConsumerWidget {
   final Ayah ayah;
+  final int surahNumber;
   final double fontSize;
   final bool bookmarked;
   final VoidCallback onBookmark;
   final VoidCallback onCopy;
   const _AyahCard({
     required this.ayah,
+    required this.surahNumber,
     required this.fontSize,
     required this.bookmarked,
     required this.onBookmark,
@@ -348,17 +353,15 @@ class _AyahCard extends ConsumerWidget {
             textDirection: TextDirection.rtl,
             child: Align(
               alignment: Alignment.centerRight,
-              child: Text(
-                ayah.arabic,
-                style: TextStyle(
-                  fontSize: fontSize,
-                  height: 2.0,
-                  color: AppColors.onSurface,
-                ),
-                textAlign: TextAlign.right,
+              child: _ArabicWordRow(
+                arabic: ayah.arabic,
+                fontSize: fontSize,
+                surahNumber: surahNumber,
+                ayahNumber: ayah.number,
               ),
             ),
           ),
+
           const Divider(height: 20, color: AppColors.surfaceVariant),
 
           Directionality(
@@ -377,6 +380,119 @@ class _AyahCard extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ArabicWordRow extends StatefulWidget {
+  final String arabic;
+  final double fontSize;
+  final int surahNumber;
+  final int ayahNumber;
+  const _ArabicWordRow({
+    required this.arabic,
+    required this.fontSize,
+    required this.surahNumber,
+    required this.ayahNumber,
+  });
+
+  @override
+  State<_ArabicWordRow> createState() => _ArabicWordRowState();
+}
+
+class _ArabicWordRowState extends State<_ArabicWordRow> {
+  int? _activeIndex;
+  final _player = AudioPlayer();
+  List<(int, int)>? _wordTimings;
+
+  @override
+  void initState() {
+    super.initState();
+    final words = widget.arabic.split(' ');
+    _wordTimings = QuranTimingService.getWordTimings(
+      widget.surahNumber,
+      widget.ayahNumber,
+      words.length,
+    );
+
+    _player.positionStream.listen((pos) {
+      if (!mounted || _wordTimings == null) return;
+      final ms = pos.inMilliseconds;
+      for (int i = 0; i < _wordTimings!.length; i++) {
+        final (start, end) = _wordTimings![i];
+        if (ms >= start && ms < end) {
+          if (_activeIndex != i) setState(() => _activeIndex = i);
+          return;
+        }
+      }
+    });
+
+    _player.playerStateStream.listen((state) {
+      if (state.processingState == ProcessingState.completed ||
+          state.processingState == ProcessingState.idle) {
+        if (mounted) setState(() => _activeIndex = null);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  Future<void> _tap(int wordIndex) async {
+    if (_activeIndex != null) {
+      await _player.stop();
+      setState(() => _activeIndex = null);
+      return;
+    }
+
+    final s = widget.surahNumber.toString().padLeft(3, '0');
+    final a = widget.ayahNumber.toString().padLeft(3, '0');
+    final url = 'https://everyayah.com/data/Alafasy_128kbps/${s}${a}.mp3';
+
+    try {
+      await _player.stop();
+      await _player.setUrl(url);
+      setState(() => _activeIndex = wordIndex);
+      await _player.play();
+    } catch (_) {
+      if (mounted) setState(() => _activeIndex = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final words = widget.arabic.split(' ');
+    return Wrap(
+      textDirection: TextDirection.rtl,
+      spacing: 4,
+      runSpacing: 6,
+      children: List.generate(words.length, (i) {
+        final active = _activeIndex == i;
+        return GestureDetector(
+          onTap: () => _tap(i),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+            decoration: active
+                ? BoxDecoration(
+                    color: AppColors.gold.withOpacity(0.25),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppColors.gold, width: 1),
+                  )
+                : null,
+            child: Text(
+              words[i],
+              style: TextStyle(
+                fontSize: widget.fontSize,
+                height: 2.0,
+                color: active ? AppColors.gold : AppColors.onSurface,
+              ),
+            ),
+          ),
+        );
+      }),
     );
   }
 }
